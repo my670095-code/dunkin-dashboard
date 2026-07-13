@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dunkin’ · Menu Mix Dashboard</title>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- SheetJS (XLSX) CDN -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+        }
+        body {
+            background: #f4f7fc;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        .dashboard-container {
+            width: 1400px;
+            max-width: 100%;
+            background: white;
+            border-radius: 32px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.08);
+            padding: 24px 28px 32px;
+            transition: all 0.2s;
+        }
+        /* login / admin panel */
+        .login-panel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 28px;
+            background: #f8faff;
+            padding: 16px 24px;
+            border-radius: 60px;
+            border: 1px solid #e9edf4;
+        }
+        .login-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+        .login-group input, .login-group select {
+            padding: 8px 16px;
+            border-radius: 40px;
+            border: 1px solid #d0d8e6;
+            background: white;
+            font-size: 0.9rem;
+            outline: none;
+            transition: 0.2s;
+        }
+        .login-group input:focus {
+            border-color: #2b6c94;
+            box-shadow: 0 0 0 3px rgba(43,108,148,0.2);
+        }
+        .btn {
+            background: #1f4970;
+            color: white;
+            border: none;
+            padding: 8px 22px;
+            border-radius: 40px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: 0.15s;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+        .btn-outline {
+            background: transparent;
+            color: #1f4970;
+            border: 1px solid #1f4970;
+        }
+        .btn-outline:hover {
+            background: #eef4fa;
+        }
+        .btn-success {
+            background: #1f8b4c;
+        }
+        .btn-danger {
+            background: #b13e3e;
+        }
+        .btn-sm {
+            padding: 6px 16px;
+            font-size: 0.8rem;
+        }
+        .badge {
+            background: #e5edf5;
+            padding: 4px 14px;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            color: #1f3a57;
+        }
+        .file-upload-area {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+            background: #f2f6fe;
+            padding: 10px 20px;
+            border-radius: 60px;
+            border: 1px dashed #97b5d4;
+        }
+        .file-upload-area input[type="file"] {
+            max-width: 180px;
+            font-size: 0.8rem;
+        }
+        .status-msg {
+            font-size: 0.85rem;
+            color: #2b5e7a;
+            background: #e1edf7;
+            padding: 4px 16px;
+            border-radius: 40px;
+        }
+        hr {
+            margin: 18px 0 22px;
+            border: none;
+            height: 1px;
+            background: linear-gradient(to right, #dbe1ec, transparent);
+        }
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 22px;
+            margin-top: 6px;
+        }
+        .card {
+            background: #ffffff;
+            border-radius: 24px;
+            padding: 20px 20px 18px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.02);
+            border: 1px solid #edf2f9;
+            transition: 0.15s;
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+        .card-header h3 {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: #1d2b40;
+            letter-spacing: -0.3px;
+        }
+        .card-header span {
+            background: #ecf3fa;
+            padding: 2px 14px;
+            border-radius: 40px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #2b5b7a;
+        }
+        .chart-wrapper {
+            height: 170px;
+            position: relative;
+        }
+        .chart-wrapper.tall {
+            height: 220px;
+        }
+        .kpi-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px 20px;
+            margin-top: 8px;
+        }
+        .kpi-item {
+            background: #f6faff;
+            padding: 6px 18px 6px 16px;
+            border-radius: 60px;
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+            border: 1px solid #e6edf6;
+        }
+        .kpi-item .label {
+            font-size: 0.75rem;
+            color: #4f688b;
+        }
+        .kpi-item .value {
+            font-weight: 700;
+            font-size: 1rem;
+            color: #0f293f;
+        }
+        .table-wrap {
+            max-height: 160px;
+            overflow-y: auto;
+            margin-top: 6px;
+            border-radius: 16px;
+            border: 1px solid #edf2f9;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.78rem;
+        }
+        th {
+            background: #f3f8ff;
+            color: #1f3a57;
+            font-weight: 600;
+            padding: 10px 8px;
+            text-align: left;
+            border-bottom: 2px solid #dde6f2;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+        td {
+            padding: 8px 8px;
+            border-bottom: 1px solid #eef2f8;
+        }
+        .text-muted {
+            color: #7689a8;
+            font-size: 0.75rem;
+            padding: 20px 0 8px;
+            text-align: center;
+        }
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .user-badge {
+            background: #d1e0f0;
+            padding: 4px 18px;
+            border-radius: 60px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        @media (max-width: 900px) {
+            .dashboard-grid { grid-template-columns: 1fr; }
+            .login-panel { flex-direction: column; align-items: stretch; }
+        }
+    </style>
+</head>
+<body>
+<div class="dashboard-container" id="app">
+    <!-- LOGIN / ADMIN BAR -->
+    <div class="login-panel">
+        <div class="login-group">
+            <input type="text" id="usernameInput" placeholder="Username" value="admin">
+            <input type="password" id="passwordInput" placeholder="Password" value="admin123">
+            <button class="btn" id="loginBtn">Login</button>
+            <button class="btn btn-outline btn-sm" id="registerBtn">Register</button>
+            <span class="badge" id="userRoleBadge">👤 visitor</span>
+        </div>
+        <div class="login-group">
+            <span id="adminControls" style="display: none;">
+                <span class="file-upload-area">
+                    <input type="file" id="fileInput" accept=".xlsx,.xls">
+                    <button class="btn btn-success btn-sm" id="uploadBtn">Upload</button>
+                    <button class="btn btn-danger btn-sm" id="removeFileBtn">Remove</button>
+                </span>
+            </span>
+            <span id="statusMessage" class="status-msg">📁 no file loaded</span>
+        </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="dashboardView" style="display: none;">
+        <div class="flex-between">
+            <h2 style="font-weight: 500; color: #1d2b40;">☕ Dunkin’ · Riyadh · 7/13/2026</h2>
+            <span class="user-badge" id="userNameDisplay">admin</span>
+        </div>
+        <hr>
+        <div class="kpi-row" id="kpiContainer">
+            <div class="kpi-item"><span class="label">🧾 Total Sales</span><span class="value" id="kpiSales">0</span></div>
+            <div class="kpi-item"><span class="label">📦 Items sold</span><span class="value" id="kpiItems">0</span></div>
+            <div class="kpi-item"><span class="label">🏷️ Avg. price</span><span class="value" id="kpiAvg">0</span></div>
+            <div class="kpi-item"><span class="label">📍 Locations</span><span class="value" id="kpiLocations">0</span></div>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="card"><div class="card-header"><h3>Sales by Major Group</h3><span>📊</span></div><div class="chart-wrapper"><canvas id="chartMajorGroup"></canvas></div></div>
+            <div class="card"><div class="card-header"><h3>Top 5 Menu Items</h3><span>🏆</span></div><div class="chart-wrapper"><canvas id="chartTopItems"></canvas></div></div>
+            <div class="card"><div class="card-header"><h3>Order Channel</h3><span>🛒</span></div><div class="chart-wrapper"><canvas id="chartChannel"></canvas></div></div>
+            <div class="card"><div class="card-header"><h3>Revenue by Location</h3><span>📍</span></div><div class="chart-wrapper"><canvas id="chartLocation"></canvas></div></div>
+        </div>
+        <!-- Data table preview -->
+        <div style="margin-top: 18px; background: #fafcff; border-radius: 24px; padding: 12px 4px 4px 12px; border:1px solid #ecf1f8;">
+            <div style="font-weight:600; font-size:0.85rem; color:#1f3a57; margin-bottom:6px;">📋 Sample Transactions</div>
+            <div class="table-wrap" id="tableContainer"><div class="text-muted">Upload a file to see data</div></div>
+        </div>
+    </div>
+    <div id="welcomePlaceholder" style="text-align: center; padding: 60px 0 40px; color: #7b93b3;">
+        <div style="font-size: 2.4rem; margin-bottom: 10px;">📊</div>
+        <h3 style="font-weight: 400;">Upload your Menu Mix file or login</h3>
+        <p style="font-size:0.9rem; margin-top: 6px;">Admin: upload .xlsx · user: view dashboard</p>
+    </div>
+</div>
+
+<script>
+    (function() {
+        // ---------- STATE ----------
+        let currentUser = { name: 'visitor', role: 'user' };   // 'admin' or 'user'
+        let rawData = [];            // array of row objects
+        let charts = {};
+
+        // DOM refs
+        const usernameInput = document.getElementById('usernameInput');
+        const passwordInput = document.getElementById('passwordInput');
+        const loginBtn = document.getElementById('loginBtn');
+        const registerBtn = document.getElementById('registerBtn');
+        const userRoleBadge = document.getElementById('userRoleBadge');
+        const adminControls = document.getElementById('adminControls');
+        const statusMessage = document.getElementById('statusMessage');
+        const fileInput = document.getElementById('fileInput');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const removeFileBtn = document.getElementById('removeFileBtn');
+        const dashboardView = document.getElementById('dashboardView');
+        const welcomePlaceholder = document.getElementById('welcomePlaceholder');
+        const userNameDisplay = document.getElementById('userNameDisplay');
+        const tableContainer = document.getElementById('tableContainer');
+
+        // KPI elements
+        const kpiSales = document.getElementById('kpiSales');
+        const kpiItems = document.getElementById('kpiItems');
+        const kpiAvg = document.getElementById('kpiAvg');
+        const kpiLocations = document.getElementById('kpiLocations');
+
+        // ---------- MOCK REGISTRATION / AUTH ----------
+        // In a real app: backend. We simulate: admin: admin/admin123, any other user: user/user123
+        function authenticate(username, password) {
+            if (username === 'admin' && password === 'admin123') {
+                return { name: 'admin', role: 'admin' };
+            } else if (username === 'user' && password === 'user123') {
+                return { name: 'user', role: 'user' };
+            } else {
+                // fallback: allow any user as 'user' (for demo)
+                if (username && password) return { name: username, role: 'user' };
+                return null;
+            }
+        }
+
+        function updateUIForUser(user) {
+            currentUser = user;
+            userRoleBadge.innerText = user ? `👤 ${user.role}` : '👤 visitor';
+            userNameDisplay.innerText = user ? user.name : 'visitor';
+            if (user && user.role === 'admin') {
+                adminControls.style.display = 'inline-flex';
+            } else {
+                adminControls.style.display = 'none';
+            }
+            // Show dashboard if user logged in & data exists or admin
+            const hasData = rawData && rawData.length > 0;
+            if (user && (user.role === 'admin' || user.role === 'user')) {
+                dashboardView.style.display = 'block';
+                welcomePlaceholder.style.display = 'none';
+                if (hasData) renderDashboard();
+                else {
+                    // show empty state inside dashboard
+                    setEmptyDashboardState();
+                }
+            } else {
+                dashboardView.style.display = 'none';
+                welcomePlaceholder.style.display = 'block';
+            }
+        }
+
+        // ---------- LOGIN / REGISTER ----------
+        loginBtn.addEventListener('click', () => {
+            const user = authenticate(usernameInput.value.trim(), passwordInput.value.trim());
+            if (user) {
+                updateUIForUser(user);
+                statusMessage.innerText = `✅ logged as ${user.name}`;
+                if (rawData.length) renderDashboard();
+            } else {
+                alert('Login failed. Try admin/admin123 or user/user123');
+            }
+        });
+
+        registerBtn.addEventListener('click', () => {
+            // mock registration: just log as user
+            const name = usernameInput.value.trim() || 'newbie';
+            const user = { name, role: 'user' };
+            // In real app, would send to backend. We just set.
+            updateUIForUser(user);
+            statusMessage.innerText = `📝 registered as ${name} (pending admin approval – demo)`;
+        });
+
+        // ---------- FILE UPLOAD / PARSE ----------
+        function handleFile(file) {
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const json = XLSX.utils.sheet_to_json(firstSheet);
+                    if (json && json.length > 0) {
+                        rawData = json;
+                        statusMessage.innerText = `✅ loaded ${rawData.length} rows`;
+                        // auto show dashboard if user logged
+                        if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'user')) {
+                            dashboardView.style.display = 'block';
+                            welcomePlaceholder.style.display = 'none';
+                            renderDashboard();
+                        } else {
+                            // if not logged, show placeholder
+                            dashboardView.style.display = 'none';
+                            welcomePlaceholder.style.display = 'block';
+                            statusMessage.innerText = '⚠️ login to view dashboard';
+                        }
+                    } else {
+                        alert('No data found in file.');
+                    }
+                } catch (err) {
+                    alert('Error reading file: ' + err.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        uploadBtn.addEventListener('click', () => {
+            if (currentUser.role !== 'admin') {
+                alert('Only admin can upload files.');
+                return;
+            }
+            const file = fileInput.files[0];
+            if (file) handleFile(file);
+            else alert('Select a file first.');
+        });
+
+        removeFileBtn.addEventListener('click', () => {
+            if (currentUser.role !== 'admin') {
+                alert('Only admin can remove files.');
+                return;
+            }
+            rawData = [];
+            fileInput.value = '';
+            statusMessage.innerText = '🗑️ file removed';
+            setEmptyDashboardState();
+            // if no data, show placeholder
+            if (!currentUser || currentUser.role === 'user') {
+                // but user can still see empty dashboard
+            }
+            renderDashboard(); // re-render empty
+        });
+
+        // ---------- RENDER DASHBOARD (charts + KPIs + table) ----------
+        function setEmptyDashboardState() {
+            kpiSales.innerText = '0';
+            kpiItems.innerText = '0';
+            kpiAvg.innerText = '0';
+            kpiLocations.innerText = '0';
+            tableContainer.innerHTML = '<div class="text-muted">No data loaded</div>';
+            // destroy charts
+            Object.values(charts).forEach(c => { if (c) c.destroy(); });
+            charts = {};
+        }
+
+        function renderDashboard() {
+            if (!rawData || rawData.length === 0) {
+                setEmptyDashboardState();
+                return;
+            }
+
+            // compute KPIs
+            const totalSales = rawData.reduce((sum, r) => sum + (parseFloat(r['Gross Sales after Discount']) || 0), 0);
+            const totalItems = rawData.reduce((sum, r) => sum + (parseFloat(r['Sales Count']) || 0), 0);
+            const avgPrice = totalItems > 0 ? (totalSales / totalItems) : 0;
+            const locations = new Set(rawData.map(r => r['Location Name'] || ''));
+            kpiSales.innerText = totalSales.toFixed(0);
+            kpiItems.innerText = totalItems.toFixed(0);
+            kpiAvg.innerText = avgPrice.toFixed(1);
+            kpiLocations.innerText = locations.size;
+
+            // ---- charts ----
+            // 1) Major Group
+            const groupMap = {};
+            rawData.forEach(r => {
+                const g = r['Major Group Name'] || 'Other';
+                groupMap[g] = (groupMap[g] || 0) + (parseFloat(r['Gross Sales after Discount']) || 0);
+            });
+            const groupLabels = Object.keys(groupMap);
+            const groupValues = Object.values(groupMap);
+
+            // 2) Top items (by sales count)
+            const itemMap = {};
+            rawData.forEach(r => {
+                const name = r['Menu Item Name'] || 'Unknown';
+                itemMap[name] = (itemMap[name] || 0) + (parseFloat(r['Sales Count']) || 0);
+            });
+            const sortedItems = Object.entries(itemMap).sort((a,b) => b[1] - a[1]).slice(0,5);
+            const itemLabels = sortedItems.map(i => i[0]);
+            const itemValues = sortedItems.map(i => i[1]);
+
+            // 3) Order Channel
+            const channelMap = {};
+            rawData.forEach(r => {
+                const ch = r['Order Channel Name'] || 'Other';
+                channelMap[ch] = (channelMap[ch] || 0) + (parseFloat(r['Gross Sales after Discount']) || 0);
+            });
+            const chLabels = Object.keys(channelMap);
+            const chValues = Object.values(channelMap);
+
+            // 4) Location revenue
+            const locMap = {};
+            rawData.forEach(r => {
+                const loc = r['Location Name'] || 'Unknown';
+                locMap[loc] = (locMap[loc] || 0) + (parseFloat(r['Gross Sales after Discount']) || 0);
+            });
+            const locLabels = Object.keys(locMap);
+            const locValues = Object.values(locMap);
+
+            // destroy old charts
+            Object.values(charts).forEach(c => { if (c) c.destroy(); });
+            charts = {};
+
+            const colors = ['#2b6c94','#4a8bb7','#6ba3c9','#96bddb','#bcd3e8'];
+
+            // helper: create chart
+            function createChart(id, type, labels, data, label, bgColor = '#2b6c94') {
+                const ctx = document.getElementById(id).getContext('2d');
+                return new Chart(ctx, {
+                    type: type,
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: label,
+                            data: data,
+                            backgroundColor: type === 'pie' ? colors.slice(0, labels.length) : 'rgba(43,108,148,0.7)',
+                            borderColor: '#1f4970',
+                            borderWidth: 1,
+                            tension: 0.15,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: type === 'bar' ? { y: { beginAtZero: true } } : undefined
+                    }
+                });
+            }
+
+            charts.major = createChart('chartMajorGroup', 'bar', groupLabels, groupValues, 'Sales (SAR)');
+            charts.top = createChart('chartTopItems', 'bar', itemLabels, itemValues, 'Units sold');
+            charts.channel = createChart('chartChannel', 'pie', chLabels, chValues, 'Revenue');
+            charts.location = createChart('chartLocation', 'bar', locLabels, locValues, 'Revenue (SAR)');
+
+            // ---- Table preview (first 10 rows) ----
+            const sample = rawData.slice(0, 10);
+            let html = `<table><thead><tr><th>Item</th><th>Location</th><th>Sales</th><th>Count</th></tr></thead><tbody>`;
+            sample.forEach(r => {
+                html += `<tr><td>${r['Menu Item Name'] || ''}</td><td>${r['Location Name'] || ''}</td><td>${parseFloat(r['Gross Sales after Discount']||0).toFixed(0)}</td><td>${r['Sales Count']||0}</td></tr>`;
+            });
+            html += `</tbody></table>`;
+            if (rawData.length > 10) html += `<div style="padding:6px 8px;font-size:0.7rem;color:#6d85a5;">+ ${rawData.length-10} more rows</div>`;
+            tableContainer.innerHTML = html;
+        }
+
+        // ---------- INIT ----------
+        // default: visitor
+        updateUIForUser(null);
+        // if admin auto login for demo? we keep clean.
+        // Preload sample data? we don't, user must upload.
+        // but we provide a small hint.
+        statusMessage.innerText = '📂 upload .xlsx (admin)';
+
+        // allow drag & drop on file input? we keep simple.
+        // also if user clicks upload, process.
+        // additional: auto login as admin if wanted? we let user.
+        console.log('Dashboard ready');
+    })();
+</script>
+</body>
+</html>
