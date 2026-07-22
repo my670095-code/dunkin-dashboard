@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Dunkin' Dashboard</title>
+    <title>Dunkin' Dashboard - Menu Mix</title>
     <!-- Chart.js & plugins -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js">
     </script>
@@ -35,7 +35,6 @@
             padding: 20px;
         }
 
-        /* ---------- Dashboard Container ---------- */
         .dashboard-container {
             width: 1440px;
             max-width: 100%;
@@ -193,9 +192,6 @@
             display: block;
         }
 
-        /* ============================================================ */
-        /* ========== SIDEBAR DASHBOARD LAYOUT ========== */
-        /* ============================================================ */
         #dashboardView {
             display: none;
             flex: 1;
@@ -333,13 +329,17 @@
             padding: 8px 12px 4px;
         }
 
-        .sidebar .nav-item {
+        .sidebar .folder-item {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .sidebar .folder-item .nav-item {
             display: flex;
             align-items: center;
             gap: 12px;
             padding: 10px 16px;
             border-radius: 10px;
-            cursor: pointer;
             transition: all 0.2s ease;
             color: #8a8a9a;
             font-size: 0.82rem;
@@ -348,36 +348,90 @@
             margin: 1px 0;
         }
 
-        .sidebar .nav-item:hover {
+        .sidebar .folder-item .nav-item:hover {
             background: rgba(212, 165, 116, 0.06);
             color: #e0e0e0;
         }
 
-        .sidebar .nav-item.active {
+        .sidebar .folder-item .nav-item.active {
             background: rgba(212, 165, 116, 0.1);
             color: #D4A574;
             box-shadow: inset 3px 0 0 #D4A574;
         }
 
-        .sidebar .nav-item .icon {
+        .sidebar .folder-item .nav-item .icon {
             font-size: 1.1rem;
             width: 24px;
             text-align: center;
             flex-shrink: 0;
         }
 
-        .sidebar .nav-item .label {
+        .sidebar .folder-item .nav-item .label {
             flex: 1;
             white-space: nowrap;
         }
 
-        .sidebar .nav-item .badge-nav {
-            background: rgba(212, 165, 116, 0.12);
-            padding: 1px 10px;
-            border-radius: 20px;
-            font-size: 0.55rem;
-            font-weight: 700;
+        .sidebar .folder-item .nav-item .folder-arrow {
+            font-size: 0.6rem;
+            color: #5a5a6a;
+            transition: transform 0.3s ease;
+            margin-left: auto;
+            flex-shrink: 0;
+        }
+
+        .sidebar .folder-item .nav-item .folder-arrow.open {
+            transform: rotate(90deg);
+        }
+
+        .sidebar .folder-children {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, opacity 0.3s ease;
+            opacity: 0;
+            padding-left: 8px;
+        }
+
+        .sidebar .folder-children.open {
+            max-height: 800px;
+            opacity: 1;
+        }
+
+        .sidebar .folder-children .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 7px 16px 7px 36px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: #8a8a9a;
+            font-size: 0.78rem;
+            font-weight: 400;
+            text-decoration: none;
+            margin: 1px 0;
+        }
+
+        .sidebar .folder-children .nav-item:hover {
+            background: rgba(212, 165, 116, 0.06);
+            color: #d0d0d0;
+        }
+
+        .sidebar .folder-children .nav-item.active {
+            background: rgba(212, 165, 116, 0.08);
             color: #D4A574;
+            box-shadow: inset 2px 0 0 #D4A574;
+        }
+
+        .sidebar .folder-children .nav-item .icon {
+            font-size: 0.9rem;
+            width: 20px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .sidebar .folder-children .nav-item .label {
+            flex: 1;
+            white-space: nowrap;
         }
 
         /* ---------- CONTENT AREA ---------- */
@@ -397,7 +451,6 @@
             border-radius: 10px;
         }
 
-        /* ---------- PAGE CONTAINERS ---------- */
         .page-content {
             display: none;
             animation: fadeIn 0.3s ease;
@@ -2187,7 +2240,6 @@
             cursor: default;
         }
 
-        /* ---------- Responsive ---------- */
         @media (max-width: 992px) {
             .sidebar {
                 width: 60px;
@@ -2209,6 +2261,19 @@
             .sidebar .nav-item .icon {
                 font-size: 1.4rem;
                 width: auto;
+            }
+            .sidebar .folder-children .nav-item {
+                padding: 7px 12px 7px 12px;
+            }
+            .sidebar .folder-children .nav-item .label {
+                display: none;
+            }
+            .sidebar .folder-children .nav-item .icon {
+                font-size: 1.1rem;
+                width: auto;
+            }
+            .sidebar .folder-item .nav-item .folder-arrow {
+                display: none;
             }
             .upload-grid {
                 grid-template-columns: 1fr;
@@ -2302,10 +2367,6 @@
                 min-width: unset;
             }
         }
-
-        #debugContainer {
-            display: none !important;
-        }
     </style>
 </head>
 <body>
@@ -2365,41 +2426,51 @@
                 <div class="nav-section">
                     <div class="section-label">Navigation</div>
                     
-                    <div class="nav-item active" data-page="upload" onclick="navigateTo('upload')">
-                        <span class="icon">📂</span>
-                        <span class="label">Upload</span>
-                    </div>
-                    <div class="nav-item" data-page="charts" onclick="navigateTo('charts')">
-                        <span class="icon">📊</span>
-                        <span class="label">Chart View</span>
-                    </div>
-                    <div class="nav-item" data-page="data" onclick="navigateTo('data')">
-                        <span class="icon">📋</span>
-                        <span class="label">Data Table</span>
-                    </div>
-                    <div class="nav-item" data-page="items1000" onclick="navigateTo('items1000')">
-                        <span class="icon">📈</span>
-                        <span class="label">Items 1000</span>
-                    </div>
-                    <div class="nav-item" data-page="salesmajor" onclick="navigateTo('salesmajor')">
-                        <span class="icon">📊</span>
-                        <span class="label">Sales % by Major</span>
-                    </div>
-                    <div class="nav-item" data-page="cuphot" onclick="navigateTo('cuphot')">
-                        <span class="icon">☕</span>
-                        <span class="label">Cup Sizing - Hot</span>
-                    </div>
-                    <div class="nav-item" data-page="cupcold" onclick="navigateTo('cupcold')">
-                        <span class="icon">🧊</span>
-                        <span class="label">Cup Sizing - Cold</span>
-                    </div>
-                    <div class="nav-item" data-page="stores" onclick="navigateTo('stores')">
-                        <span class="icon">🏪</span>
-                        <span class="label">Store Comparison</span>
-                    </div>
-                    <div class="nav-item" data-page="mom" onclick="navigateTo('mom')">
-                        <span class="icon">📊</span>
-                        <span class="label">MoM Comparison</span>
+                    <!-- ===== MENU MIX FOLDER ===== -->
+                    <div class="folder-item">
+                        <div class="nav-item" id="menuMixFolder" onclick="toggleFolder()">
+                            <span class="icon">📊</span>
+                            <span class="label">Menu Mix</span>
+                            <span class="folder-arrow" id="folderArrow">▶</span>
+                        </div>
+                        <div class="folder-children" id="folderChildren">
+                            <div class="nav-item active" data-page="upload" onclick="navigateTo('upload')">
+                                <span class="icon">📤</span>
+                                <span class="label">Upload</span>
+                            </div>
+                            <div class="nav-item" data-page="charts" onclick="navigateTo('charts')">
+                                <span class="icon">📊</span>
+                                <span class="label">Chart View</span>
+                            </div>
+                            <div class="nav-item" data-page="data" onclick="navigateTo('data')">
+                                <span class="icon">📋</span>
+                                <span class="label">Data Table</span>
+                            </div>
+                            <div class="nav-item" data-page="items1000" onclick="navigateTo('items1000')">
+                                <span class="icon">📈</span>
+                                <span class="label">Items 1000</span>
+                            </div>
+                            <div class="nav-item" data-page="salesmajor" onclick="navigateTo('salesmajor')">
+                                <span class="icon">📊</span>
+                                <span class="label">Sales % by Major</span>
+                            </div>
+                            <div class="nav-item" data-page="cuphot" onclick="navigateTo('cuphot')">
+                                <span class="icon">☕</span>
+                                <span class="label">Cup Sizing - Hot</span>
+                            </div>
+                            <div class="nav-item" data-page="cupcold" onclick="navigateTo('cupcold')">
+                                <span class="icon">🧊</span>
+                                <span class="label">Cup Sizing - Cold</span>
+                            </div>
+                            <div class="nav-item" data-page="stores" onclick="navigateTo('stores')">
+                                <span class="icon">🏪</span>
+                                <span class="label">Store Comparison</span>
+                            </div>
+                            <div class="nav-item" data-page="mom" onclick="navigateTo('mom')">
+                                <span class="icon">📊</span>
+                                <span class="label">MoM Comparison</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </nav>
@@ -2410,7 +2481,7 @@
                 <!-- ===== PAGE: UPLOAD ===== -->
                 <div class="page-content active" id="page-upload">
                     <div class="page-title">
-                        <span class="page-icon">📂</span>
+                        <span class="page-icon">📤</span>
                         Upload Data
                         <span class="page-sub">Upload your Excel files to get started</span>
                     </div>
@@ -2930,7 +3001,7 @@
                     </div>
                 </div>
 
-                <!-- ===== PAGE: STORE COMPARISON (COMPLETE) ===== -->
+                <!-- ===== PAGE: STORE COMPARISON ===== -->
                 <div class="page-content" id="page-stores">
                     <div class="page-title">
                         <span class="page-icon">🏪</span>
@@ -2938,7 +3009,6 @@
                         <span class="page-sub">Complete store performance analysis</span>
                     </div>
 
-                    <!-- Store Selector -->
                     <div class="storewise-filter-area">
                         <div class="filter-group">
                             <label>🏪 Select Store</label>
@@ -2955,7 +3025,6 @@
                         <button class="btn btn-sm" onclick="renderStoreWise()">🔄 Refresh</button>
                     </div>
 
-                    <!-- Store KPI Cards -->
                     <div class="kpi-row" id="storewiseKpiContainer">
                         <div class="kpi-item"><span class="kpi-icon">🧾</span><div class="kpi-content"><span class="label">Total Sales</span><span class="value" id="swKpiSales">0</span></div></div>
                         <div class="kpi-item"><span class="kpi-icon">📦</span><div class="kpi-content"><span class="label">Items Sold</span><span class="value" id="swKpiItems">0</span></div></div>
@@ -2964,7 +3033,6 @@
                         <div class="kpi-item"><span class="kpi-icon">📊</span><div class="kpi-content"><span class="label">1000 Per Count</span><span class="value" id="swKpi1000">0</span></div></div>
                     </div>
 
-                    <!-- Store Charts -->
                     <div class="storewise-charts-grid">
                         <div class="card-vertical">
                             <div class="card-header"><h3>Sales by Major Group</h3><span>📊</span></div>
@@ -2984,7 +3052,6 @@
                         </div>
                     </div>
 
-                    <!-- Cup Sizing -->
                     <div class="storewise-cup-grid">
                         <div class="card-vertical">
                             <div class="card-header"><h3>☕ Cup Sizing - Hot Beverages</h3><span>📊</span></div>
@@ -3000,7 +3067,6 @@
                         </div>
                     </div>
 
-                    <!-- Action Plan -->
                     <div class="action-plan-section">
                         <div class="action-plan-header">
                             <h3>🎯 Action Plan - Data-Driven Insights</h3>
@@ -3011,7 +3077,6 @@
                         </div>
                     </div>
 
-                    <!-- Store Data Table -->
                     <div class="data-table-section">
                         <div class="table-header">
                             <div class="table-title">
@@ -3149,11 +3214,10 @@
             </div>
         </div>
     </div>
-
-    <div id="debugContainer" style="display:none;"></div>
 </div>
 
 <script>
+// ===== COMPLETE JAVASCRIPT WITH ALL FUNCTIONS =====
 (function() {
     // ===================== STATE =====================
     let currentUser = null;
@@ -3163,10 +3227,8 @@
     let filteredDataForTable = [];
     let charts = {};
     let chartDataStore = {};
-    let chartInitialized = false;
     let currentFileName = '';
     let allocationFileName = '';
-    let dataLoadedFromStorage = false;
     let columnMap = {};
     let allocationColumnMap = {};
     
@@ -3186,20 +3248,6 @@
     let customAreaOptions = [];
     let customTerritorySearch = '';
     let customAreaSearch = '';
-
-    // Store 1000 Per Count state
-    let storeThousandItemSelections = [];
-    let storeThousandAllItems = [];
-    let storeThousandItemSearchTerm = '';
-    let storeThousandCurrentFilteredItems = [];
-    let storeThousandTerritorySelections = [];
-    let storeThousandAreaSelections = [];
-    let storeThousandTerritoryOptions = [];
-    let storeThousandAreaOptions = [];
-    let storeThousandTerritorySearch = '';
-    let storeThousandAreaSearch = '';
-    let storeThousandSortField = 'thousandPerCount';
-    let storeThousandSortOrder = 'desc';
 
     // Store multi-select state
     let storeFilterSelections = {
@@ -3225,8 +3273,10 @@
 
     // Store Wise State
     let storeWiseCharts = {};
-    let selectedStore = '';
     let momCharts = {};
+
+    // Folder state
+    let isFolderOpen = false;
 
     // ===================== FIXED ADMIN CREDENTIALS =====================
     const ADMIN_USERNAME = 'Yousuf';
@@ -3315,6 +3365,25 @@
     const momTableRowCount = document.getElementById('momTableRowCount');
     const dataStatusBadge = document.getElementById('dataStatusBadge');
 
+    // Folder elements
+    const folderChildren = document.getElementById('folderChildren');
+    const folderArrow = document.getElementById('folderArrow');
+
+    // ===================== FOLDER TOGGLE =====================
+    window.toggleFolder = function() {
+        isFolderOpen = !isFolderOpen;
+        if (isFolderOpen) {
+            folderChildren.classList.add('open');
+            folderArrow.classList.add('open');
+            folderArrow.textContent = '▼';
+        } else {
+            folderChildren.classList.remove('open');
+            folderArrow.classList.remove('open');
+            folderArrow.textContent = '▶';
+        }
+        localStorage.setItem('dunkin_folder_open', isFolderOpen ? 'true' : 'false');
+    };
+
     // ===================== MULTI-SELECT STATE =====================
     let filterSelections = {};
     let filterOptionsMap = {};
@@ -3325,13 +3394,21 @@
 
     // ===================== NAVIGATION =====================
     window.navigateTo = function(page) {
-        document.querySelectorAll('.sidebar .nav-item').forEach(el => el.classList.remove('active'));
-        const navItem = document.querySelector(`.sidebar .nav-item[data-page="${page}"]`);
+        document.querySelectorAll('.folder-children .nav-item').forEach(el => el.classList.remove('active'));
+        const navItem = document.querySelector(`.folder-children .nav-item[data-page="${page}"]`);
         if (navItem) navItem.classList.add('active');
         
         document.querySelectorAll('.page-content').forEach(el => el.classList.remove('active'));
         const pageEl = document.getElementById(`page-${page}`);
         if (pageEl) pageEl.classList.add('active');
+        
+        if (!isFolderOpen) {
+            isFolderOpen = true;
+            folderChildren.classList.add('open');
+            folderArrow.classList.add('open');
+            folderArrow.textContent = '▼';
+            localStorage.setItem('dunkin_folder_open', 'true');
+        }
         
         switch(page) {
             case 'charts':
@@ -3395,7 +3472,7 @@
         userRoleBadge.innerText = user.username;
         
         const hasData = loadDataFromLocalStorage();
-        if (hasData) {
+        if (hasData && mainData.length > 0) {
             if (mainData.length > 0) {
                 fileNameDisplay.textContent = currentFileName || 'main_data';
                 fileNameDisplay.className = 'file-status loaded';
@@ -3493,6 +3570,7 @@
                     if (data && data.length > 0) {
                         mainData = data;
                         currentFileName = localStorage.getItem('dunkin_main_filename') || 'main_data';
+                        console.log('📂 Main data loaded:', mainData.length, 'rows');
                     }
                 }
                 const allocStored = localStorage.getItem('dunkin_allocation_data');
@@ -3501,6 +3579,7 @@
                     if (data && data.length > 0) {
                         allocationData = data;
                         allocationFileName = localStorage.getItem('dunkin_allocation_filename') || 'allocation_data';
+                        console.log('📂 Allocation data loaded:', allocationData.length, 'rows');
                     }
                 }
                 const selectionsStored = localStorage.getItem('dunkin_custom_item_selections');
@@ -3524,13 +3603,19 @@
                 if (customAreaStored) {
                     customAreaSelections = JSON.parse(customAreaStored);
                 }
-                dataLoadedFromStorage = true;
-                console.log('📂 Data loaded from localStorage');
+                const folderState = localStorage.getItem('dunkin_folder_open');
+                if (folderState === 'true') {
+                    isFolderOpen = true;
+                    folderChildren.classList.add('open');
+                    folderArrow.classList.add('open');
+                    folderArrow.textContent = '▼';
+                }
+                console.log('✅ Data loaded from localStorage successfully');
                 return true;
             }
             return false;
         } catch(e) {
-            console.error('❌ Error loading data:', e);
+            console.error('❌ Error loading data from localStorage:', e);
             return false;
         }
     }
@@ -3546,8 +3631,7 @@
             localStorage.removeItem('dunkin_store_filters');
             localStorage.removeItem('dunkin_custom_territory');
             localStorage.removeItem('dunkin_custom_area');
-            console.log('🗑️ Data cleared from localStorage');
-            dataLoadedFromStorage = false;
+            console.log('🗑️ All data cleared from localStorage');
         } catch(e) {
             console.error('❌ Error clearing data:', e);
         }
@@ -3697,7 +3781,6 @@
         populateCustomDateFilter();
         populateCustomTerritoryFilter();
         populateCustomAreaFilter();
-        chartInitialized = false;
         applyFilters();
         updateDataStatusBadge();
     }
@@ -3953,7 +4036,6 @@
             }
         }
         
-        // Also populate store filters
         ['storeDateFilter', 'storeDateFilterHot', 'storeDateFilterCold', 'storewiseDateFilter'].forEach(id => {
             const el = document.getElementById(id);
             if (el) {
@@ -5026,6 +5108,21 @@
         return null;
     }
 
+    function getPercentageColor(value) {
+        if (value <= 10) return 'pct-very-low';
+        if (value <= 30) return 'pct-low';
+        if (value <= 50) return 'pct-medium';
+        if (value <= 70) return 'pct-high';
+        return 'pct-very-high';
+    }
+
+    function getCupSizeColor(value) {
+        if (value <= 15) return 'pct-size-small';
+        if (value <= 35) return 'pct-size-medium';
+        if (value <= 55) return 'pct-size-high';
+        return 'pct-size-very-high';
+    }
+
     // ===================== CUSTOM RANKING (Items 1000 Per count) =====================
     window.sortCustomRanking = function(field) {
         if (customSortField === field) {
@@ -5267,22 +5364,6 @@
             customRankingContainer.innerHTML = html;
         }
     };
-
-    // ===================== CONDITIONAL FORMATTING HELPERS =====================
-    function getPercentageColor(value) {
-        if (value <= 10) return 'pct-very-low';
-        if (value <= 30) return 'pct-low';
-        if (value <= 50) return 'pct-medium';
-        if (value <= 70) return 'pct-high';
-        return 'pct-very-high';
-    }
-
-    function getCupSizeColor(value) {
-        if (value <= 15) return 'pct-size-small';
-        if (value <= 35) return 'pct-size-medium';
-        if (value <= 55) return 'pct-size-high';
-        return 'pct-size-very-high';
-    }
 
     function getThousandPerCountRank(rank, total) {
         const pct = (rank / total) * 100;
@@ -6045,8 +6126,6 @@
     };
 
     // ===================== CHART DETAILS MODAL =====================
-    let chartDetailData = {};
-
     window.showChartDetails = function(chartId) {
         const chartData = chartDataStore[chartId];
         if (!chartData || !chartData.labels || chartData.labels.length === 0) {
@@ -6098,8 +6177,6 @@
                     items: sortedItems
                 });
             });
-            
-            chartDetailData.majorGroup = allGroupDetails;
             
             let tableHtml = '';
             allGroupDetails.forEach((group, idx) => {
@@ -6226,8 +6303,6 @@
                 });
             });
             
-            chartDetailData.channel = allChannelDetails;
-            
             let tableHtml = '';
             allChannelDetails.forEach((channel, idx) => {
                 const pct = totalSales > 0 ? (channel.sales / totalSales) * 100 : 0;
@@ -6299,8 +6374,6 @@
                     items: sortedItems
                 });
             });
-            
-            chartDetailData.location = allLocDetails;
             
             let tableHtml = '';
             allLocDetails.forEach((loc, idx) => {
@@ -7040,7 +7113,6 @@
         if (kpiAvg) kpiAvg.innerText = '0';
         if (kpiLocations) kpiLocations.innerText = '0';
         if (kpiRows) kpiRows.innerText = '0';
-        chartInitialized = false;
         Object.values(charts).forEach(c => { 
             try { if (c) c.destroy(); } catch(e) {} 
         }); 
@@ -7301,7 +7373,6 @@
         charts.channel = createChart('chartChannel', 'pie', filteredChannel.labels, filteredChannel.values, 'Revenue', true);
         charts.location = createChart('chartLocation', 'bar', filteredLocation.labels, filteredLocation.values, 'Revenue (SAR)');
 
-        chartInitialized = true;
         updateDataStatusBadge();
     }
 
@@ -7685,6 +7756,7 @@
                     populateMomFilters();
                     renderMoM();
                     navigateTo('charts');
+                    statusMessage.innerText = `✅ ${mainData.length} rows loaded successfully!`;
                 } else {
                     alert('No data found in file.');
                 }
@@ -7735,6 +7807,7 @@
                     renderStoreWise();
                     populateMomFilters();
                     renderMoM();
+                    statusMessage.innerText = `✅ ${allocationData.length} locations loaded successfully!`;
                 } else {
                     alert('No data found in allocation file.');
                 }
@@ -7909,17 +7982,1823 @@
         }
     }
 
+    const folderState = localStorage.getItem('dunkin_folder_open');
+    if (folderState === 'true') {
+        isFolderOpen = true;
+        folderChildren.classList.add('open');
+        folderArrow.classList.add('open');
+        folderArrow.textContent = '▼';
+    }
+
     showLogin();
     if (statusMessage) statusMessage.innerText = '📂 upload files to begin';
     console.log('✅ Dunkin Dashboard ready!');
     console.log('🔐 Admin login: Yousuf / 26111');
-    console.log('📊 Store Comparison now includes ALL features:');
-    console.log('   - Store Selector with filters');
-    console.log('   - KPI Cards');
-    console.log('   - Charts (Major Group, Top Items, Channel, Ranking)');
-    console.log('   - Cup Sizing (Hot & Cold)');
-    console.log('   - Action Plan with Data-Driven Insights');
-    console.log('   - Store Data Table with Search');
+    console.log('📂 Menu Mix Folder with all analytical views');
+    console.log('💾 Data is automatically saved in your browser');
+})();
+</script>
+<!-- ===== SALES MODULE - WITH DAILY TREND & SALES SUMMARY AS SUB-ITEMS ===== -->
+<script>
+(function() {
+    'use strict';
+    
+    console.log('💰 Initializing Sales Module...');
+
+    class SalesModule {
+        constructor() {
+            this.salesData = [];
+            this.salesColumnMap = {};
+            this.salesCharts = {};
+            this.salesFileName = '';
+            this.initialized = false;
+            this.isProcessing = false;
+            this.processedData = null;
+            this.filteredData = null;
+            this.currentView = 'charts';
+            this.filters = {
+                store: 'all',
+                dateRange: { start: '', end: '' }
+            };
+        }
+
+        init() {
+            if (this.initialized) return;
+            this.loadFromLocalStorage();
+            this.createUI();
+            this.bindEvents();
+            this.initialized = true;
+            console.log('✅ Sales Module initialized');
+            
+            if (this.salesData && this.salesData.length > 0) {
+                console.log(`📊 Found ${this.salesData.length} sales records`);
+                this.switchView('charts');
+            } else {
+                this.switchView('upload');
+            }
+        }
+
+        loadFromLocalStorage() {
+            try {
+                const stored = localStorage.getItem('dunkin_sales_data');
+                if (stored) {
+                    const data = JSON.parse(stored);
+                    if (data && data.length > 0) {
+                        this.salesData = data;
+                        this.salesFileName = localStorage.getItem('dunkin_sales_filename') || 'sales_data';
+                        console.log(`📊 Loaded ${this.salesData.length} sales records from storage`);
+                        return true;
+                    }
+                }
+            } catch(e) {
+                console.error('Error loading sales data:', e);
+            }
+            return false;
+        }
+
+        saveToLocalStorage() {
+            try {
+                if (this.salesData && this.salesData.length > 0) {
+                    localStorage.setItem('dunkin_sales_data', JSON.stringify(this.salesData));
+                    localStorage.setItem('dunkin_sales_filename', this.salesFileName || 'sales_data');
+                    console.log('💾 Sales data saved to localStorage');
+                    return true;
+                }
+            } catch(e) {
+                console.error('Error saving sales data:', e);
+            }
+            return false;
+        }
+
+        formatDate(dateStr) {
+            if (!dateStr) return 'Unknown';
+            try {
+                let date;
+                if (typeof dateStr === 'object' && dateStr instanceof Date) {
+                    date = dateStr;
+                } else {
+                    date = new Date(dateStr);
+                }
+                if (isNaN(date.getTime())) {
+                    return dateStr;
+                }
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const year = date.getFullYear();
+                return `${day}-${month}-${year}`;
+            } catch(e) {
+                return dateStr;
+            }
+        }
+
+        parseDateForFilter(dateStr) {
+            if (!dateStr) return null;
+            try {
+                let date;
+                if (typeof dateStr === 'object' && dateStr instanceof Date) {
+                    date = dateStr;
+                } else {
+                    date = new Date(dateStr);
+                }
+                if (isNaN(date.getTime())) {
+                    const parts = String(dateStr).split('-');
+                    if (parts.length === 3) {
+                        date = new Date(parts[2], parts[1] - 1, parts[0]);
+                    }
+                }
+                return date;
+            } catch(e) {
+                return null;
+            }
+        }
+
+        createUI() {
+            this.addSalesNavigation();
+            this.createSalesPage();
+            this.updateDataStatusBadge();
+        }
+
+        addSalesNavigation() {
+            // Check if sales navigation already exists
+            if (document.querySelector('.sales-folder')) {
+                console.log('Sales navigation already exists');
+                return;
+            }
+
+            const navContainer = document.querySelector('.sidebar .nav-section') || 
+                                document.querySelector('.nav-section') || 
+                                document.querySelector('#navigation') ||
+                                document.querySelector('.sidebar-nav') ||
+                                document.querySelector('.nav-list') ||
+                                document.querySelector('.menu-items') ||
+                                document.querySelector('[class*="nav"]');
+            
+            if (!navContainer) {
+                console.warn('⚠️ Navigation container not found, will try again later');
+                setTimeout(() => this.addSalesNavigation(), 500);
+                return;
+            }
+
+            const folder = document.createElement('div');
+            folder.className = 'sales-folder';
+            folder.style.cssText = 'margin-bottom: 4px;';
+            
+            const folderHeader = document.createElement('div');
+            folderHeader.className = 'sales-folder-header';
+            folderHeader.style.cssText = `
+                display: flex;
+                align-items: center;
+                padding: 10px 16px;
+                cursor: pointer;
+                border-radius: 8px;
+                transition: all 0.2s;
+                gap: 10px;
+                color: #ffffff;
+                font-weight: 500;
+                user-select: none;
+            `;
+            folderHeader.innerHTML = `
+                <span style="font-size: 18px;">📁</span>
+                <span style="color: #ffffff; font-weight: 500; flex: 1;">Sales Analysis</span>
+                <span style="transition: transform 0.3s; color: #8a8a9a; font-size: 12px;">▶</span>
+            `;
+            
+            folderHeader.onmouseenter = function() {
+                this.style.background = 'rgba(255,255,255,0.05)';
+            };
+            folderHeader.onmouseleave = function() {
+                this.style.background = 'transparent';
+            };
+            
+            const subItems = document.createElement('div');
+            subItems.className = 'sales-sub-items';
+            subItems.style.cssText = `
+                overflow: hidden;
+                max-height: 0;
+                transition: max-height 0.3s ease;
+                padding-left: 8px;
+            `;
+            
+            // Upload Data - Removed from top level
+            const uploadItem = document.createElement('div');
+            uploadItem.className = 'sales-nav-item';
+            uploadItem.dataset.view = 'upload';
+            uploadItem.style.cssText = `
+                display: flex;
+                align-items: center;
+                padding: 8px 16px 8px 36px;
+                cursor: pointer;
+                border-radius: 6px;
+                transition: all 0.2s;
+                gap: 10px;
+                color: #b0b0c0;
+                font-size: 13px;
+                border-left: 2px solid transparent;
+            `;
+            uploadItem.innerHTML = `
+                <span style="font-size: 14px;">📤</span>
+                <span>Upload Data</span>
+            `;
+            uploadItem.onmouseenter = function() {
+                this.style.background = 'rgba(255,255,255,0.05)';
+                this.style.color = '#ffffff';
+            };
+            uploadItem.onmouseleave = function() {
+                this.style.background = 'transparent';
+                if (!this.classList.contains('active')) {
+                    this.style.color = '#b0b0c0';
+                }
+            };
+            uploadItem.onclick = () => {
+                this.switchView('upload');
+                this.setActiveNavItem(uploadItem);
+                this.showSalesPage();
+            };
+            
+            // View Analysis (Charts)
+            const chartsItem = document.createElement('div');
+            chartsItem.className = 'sales-nav-item';
+            chartsItem.dataset.view = 'charts';
+            chartsItem.style.cssText = `
+                display: flex;
+                align-items: center;
+                padding: 8px 16px 8px 36px;
+                cursor: pointer;
+                border-radius: 6px;
+                transition: all 0.2s;
+                gap: 10px;
+                color: #b0b0c0;
+                font-size: 13px;
+                border-left: 2px solid transparent;
+            `;
+            chartsItem.innerHTML = `
+                <span style="font-size: 14px;">📊</span>
+                <span>View Analysis</span>
+            `;
+            chartsItem.onmouseenter = function() {
+                this.style.background = 'rgba(255,255,255,0.05)';
+                this.style.color = '#ffffff';
+            };
+            chartsItem.onmouseleave = function() {
+                this.style.background = 'transparent';
+                if (!this.classList.contains('active')) {
+                    this.style.color = '#b0b0c0';
+                }
+            };
+            chartsItem.onclick = () => {
+                if (this.salesData && this.salesData.length > 0) {
+                    this.switchView('charts');
+                    this.setActiveNavItem(chartsItem);
+                    this.showSalesPage();
+                } else {
+                    alert('⚠️ Please upload sales data first');
+                }
+            };
+            
+            // Daily Trend
+            const trendItem = document.createElement('div');
+            trendItem.className = 'sales-nav-item';
+            trendItem.dataset.view = 'trend';
+            trendItem.style.cssText = `
+                display: flex;
+                align-items: center;
+                padding: 8px 16px 8px 36px;
+                cursor: pointer;
+                border-radius: 6px;
+                transition: all 0.2s;
+                gap: 10px;
+                color: #b0b0c0;
+                font-size: 13px;
+                border-left: 2px solid transparent;
+            `;
+            trendItem.innerHTML = `
+                <span style="font-size: 14px;">📈</span>
+                <span>Daily Trend</span>
+            `;
+            trendItem.onmouseenter = function() {
+                this.style.background = 'rgba(255,255,255,0.05)';
+                this.style.color = '#ffffff';
+            };
+            trendItem.onmouseleave = function() {
+                this.style.background = 'transparent';
+                if (!this.classList.contains('active')) {
+                    this.style.color = '#b0b0c0';
+                }
+            };
+            trendItem.onclick = () => {
+                if (this.salesData && this.salesData.length > 0) {
+                    this.switchView('trend');
+                    this.setActiveNavItem(trendItem);
+                    this.showSalesPage();
+                } else {
+                    alert('⚠️ Please upload sales data first');
+                }
+            };
+            
+            // Sales Summary
+            const summaryItem = document.createElement('div');
+            summaryItem.className = 'sales-nav-item';
+            summaryItem.dataset.view = 'summary';
+            summaryItem.style.cssText = `
+                display: flex;
+                align-items: center;
+                padding: 8px 16px 8px 36px;
+                cursor: pointer;
+                border-radius: 6px;
+                transition: all 0.2s;
+                gap: 10px;
+                color: #b0b0c0;
+                font-size: 13px;
+                border-left: 2px solid transparent;
+            `;
+            summaryItem.innerHTML = `
+                <span style="font-size: 14px;">📋</span>
+                <span>Sales Summary</span>
+                <span style="margin-left:auto;background:#D4A574;color:#1a1a2e;padding:1px 8px;border-radius:10px;font-size:9px;font-weight:700;min-width:20px;text-align:center;" id="salesBadge">${this.salesData && this.salesData.length > 0 ? this.salesData.length : '0'}</span>
+            `;
+            summaryItem.onmouseenter = function() {
+                this.style.background = 'rgba(255,255,255,0.05)';
+                this.style.color = '#ffffff';
+            };
+            summaryItem.onmouseleave = function() {
+                this.style.background = 'transparent';
+                if (!this.classList.contains('active')) {
+                    this.style.color = '#b0b0c0';
+                }
+            };
+            summaryItem.onclick = () => {
+                if (this.salesData && this.salesData.length > 0) {
+                    this.switchView('summary');
+                    this.setActiveNavItem(summaryItem);
+                    this.showSalesPage();
+                } else {
+                    alert('⚠️ Please upload sales data first');
+                }
+            };
+            
+            let isExpanded = false;
+            folderHeader.onclick = function(e) {
+                e.stopPropagation();
+                isExpanded = !isExpanded;
+                if (isExpanded) {
+                    subItems.style.maxHeight = '500px';
+                    this.querySelector('span:last-child').style.transform = 'rotate(90deg)';
+                } else {
+                    subItems.style.maxHeight = '0px';
+                    this.querySelector('span:last-child').style.transform = 'rotate(0deg)';
+                }
+            };
+            
+            subItems.appendChild(uploadItem);
+            subItems.appendChild(chartsItem);
+            subItems.appendChild(trendItem);
+            subItems.appendChild(summaryItem);
+            folder.appendChild(folderHeader);
+            folder.appendChild(subItems);
+            navContainer.appendChild(folder);
+            
+            setTimeout(() => {
+                subItems.style.maxHeight = '500px';
+                folderHeader.querySelector('span:last-child').style.transform = 'rotate(90deg)';
+                isExpanded = true;
+                
+                if (this.salesData && this.salesData.length > 0) {
+                    this.setActiveNavItem(chartsItem);
+                } else {
+                    this.setActiveNavItem(uploadItem);
+                }
+            }, 300);
+            
+            console.log('✅ Sales navigation added');
+        }
+
+        setActiveNavItem(activeItem) {
+            document.querySelectorAll('.sales-nav-item').forEach(item => {
+                item.classList.remove('active');
+                item.style.background = 'transparent';
+                item.style.color = '#b0b0c0';
+                item.style.borderLeft = '2px solid transparent';
+            });
+            if (activeItem) {
+                activeItem.classList.add('active');
+                activeItem.style.background = 'rgba(212,165,116,0.1)';
+                activeItem.style.color = '#D4A574';
+                activeItem.style.borderLeft = '2px solid #D4A574';
+            }
+        }
+
+        showSalesPage() {
+            const page = document.getElementById('page-sales');
+            if (!page) {
+                this.createSalesPage();
+                return;
+            }
+            
+            document.querySelectorAll('.page-content').forEach(p => {
+                p.style.display = 'none';
+            });
+            page.style.display = 'block';
+            
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+        }
+
+        createSalesPage() {
+            const existing = document.getElementById('page-sales');
+            if (existing) existing.remove();
+
+            const contentArea = document.getElementById('contentArea');
+            if (!contentArea) {
+                console.error('Content area not found');
+                return;
+            }
+
+            const hasData = this.salesData && this.salesData.length > 0;
+            
+            const salesPage = document.createElement('div');
+            salesPage.className = 'page-content';
+            salesPage.id = 'page-sales';
+            salesPage.style.display = 'none';
+            salesPage.innerHTML = `
+                <div style="padding: 24px 32px; max-width: 1400px; margin: 0 auto;">
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.06);">
+                        <span style="font-size:28px;">📁</span>
+                        <div>
+                            <h1 style="font-size:22px;font-weight:600;color:#e0e0e0;margin:0;">Sales Analysis</h1>
+                            <span style="font-size:13px;color:#8a8a9a;">Upload and analyze sales data</span>
+                        </div>
+                    </div>
+
+                    <!-- UPLOAD VIEW - Simplified and Smaller -->
+                    <div id="salesUploadView" style="${hasData ? 'display:none;' : 'display:block;'}">
+                        <div style="max-width:600px;margin:0 auto;">
+                            <div style="padding:30px 40px;text-align:center;background:rgba(255,255,255,0.02);border:2px dashed rgba(255,255,255,0.1);border-radius:12px;cursor:pointer;" 
+                                 onmouseover="this.style.borderColor='#D4A574'" 
+                                 onmouseout="this.style.borderColor='rgba(255,255,255,0.1)'" 
+                                 onclick="document.getElementById('salesFileInput').click()">
+                                <div style="font-size:48px;margin-bottom:12px;">📈</div>
+                                <h3 style="color:#e0e0e0;margin-bottom:6px;font-size:18px;">Upload Sales Data</h3>
+                                <p style="color:#8a8a9a;margin-bottom:12px;font-size:13px;">Upload Daily Sales Per Store file (.xlsx, .xls)</p>
+                                <input type="file" id="salesFileInput" accept=".xlsx,.xls" style="display:none;">
+                                <div id="salesFileNameDisplay" style="padding:10px;background:rgba(255,255,255,0.03);border-radius:6px;margin-bottom:12px;color:#8a8a9a;font-size:13px;border:1px solid rgba(255,255,255,0.04);">
+                                    ${hasData ? this.salesFileName : 'Drop your file here or click to browse'}
+                                </div>
+                                <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+                                    <button id="salesUploadBtn" style="background:#D4A574;color:#1a1a2e;border:none;padding:10px 30px;border-radius:6px;font-weight:600;font-size:13px;cursor:pointer;">
+                                        📤 Upload & Process
+                                    </button>
+                                    <button id="salesRemoveBtn" style="background:rgba(255,255,255,0.05);color:#e74c3c;border:1px solid rgba(231,76,60,0.3);padding:10px 30px;border-radius:6px;font-weight:600;font-size:13px;cursor:pointer;">
+                                        🗑️ Remove Data
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ANALYSIS VIEWS -->
+                    <div id="salesAnalysisContainer" style="${hasData ? 'display:block;' : 'display:none;'}">
+
+                        <!-- FILTERS - Always visible -->
+                        <div style="background:rgba(255,255,255,0.03);border-radius:12px;padding:16px 20px;margin-bottom:24px;border:1px solid rgba(255,255,255,0.06);">
+                            <div style="display:flex;flex-wrap:wrap;align-items:center;gap:16px;">
+                                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                                    <span style="color:#8a8a9a;font-size:13px;font-weight:600;">🏪 Store:</span>
+                                    <select id="salesStoreFilter" style="background:rgba(255,255,255,0.05);color:#e0e0e0;border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:6px 12px;font-size:13px;min-width:180px;cursor:pointer;">
+                                        <option value="all">All Stores</option>
+                                    </select>
+                                </div>
+                                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                                    <span style="color:#8a8a9a;font-size:13px;font-weight:600;">📅 Date:</span>
+                                    <input type="date" id="salesDateStart" style="background:rgba(255,255,255,0.05);color:#e0e0e0;border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:6px 10px;font-size:13px;cursor:pointer;">
+                                    <span style="color:#8a8a9a;font-size:13px;">to</span>
+                                    <input type="date" id="salesDateEnd" style="background:rgba(255,255,255,0.05);color:#e0e0e0;border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:6px 10px;font-size:13px;cursor:pointer;">
+                                </div>
+                                <div style="display:flex;gap:8px;">
+                                    <button id="salesApplyFilters" style="background:#D4A574;color:#1a1a2e;border:none;padding:6px 16px;border-radius:6px;font-weight:600;font-size:13px;cursor:pointer;">🔍 Apply</button>
+                                    <button id="salesClearFilters" style="background:rgba(255,255,255,0.05);color:#8a8a9a;border:1px solid rgba(255,255,255,0.1);padding:6px 16px;border-radius:6px;font-size:13px;cursor:pointer;">✕ Clear</button>
+                                </div>
+                                <div style="margin-left:auto;">
+                                    <span style="color:#8a8a9a;font-size:12px;" id="salesFilterStatus">Showing all data</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- KPI ROW - Always visible -->
+                        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;">
+                            <div style="background:rgba(255,255,255,0.02);border-radius:12px;padding:16px 20px;border:1px solid rgba(255,255,255,0.04);">
+                                <div style="display:flex;align-items:center;gap:12px;">
+                                    <span style="font-size:24px;">💰</span>
+                                    <div>
+                                        <div style="color:#8a8a9a;font-size:12px;">Total Sales (SAR)</div>
+                                        <div style="color:#e0e0e0;font-size:20px;font-weight:700;" id="salesKpiRevenue">0</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="background:rgba(255,255,255,0.02);border-radius:12px;padding:16px 20px;border:1px solid rgba(255,255,255,0.04);">
+                                <div style="display:flex;align-items:center;gap:12px;">
+                                    <span style="font-size:24px;">👥</span>
+                                    <div>
+                                        <div style="color:#8a8a9a;font-size:12px;">Total Customers</div>
+                                        <div style="color:#e0e0e0;font-size:20px;font-weight:700;" id="salesKpiTotal">0</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="background:rgba(255,255,255,0.02);border-radius:12px;padding:16px 20px;border:1px solid rgba(255,255,255,0.04);">
+                                <div style="display:flex;align-items:center;gap:12px;">
+                                    <span style="font-size:24px;">📊</span>
+                                    <div>
+                                        <div style="color:#8a8a9a;font-size:12px;">Average APC</div>
+                                        <div style="color:#e0e0e0;font-size:20px;font-weight:700;" id="salesKpiAPC">0</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="background:rgba(255,255,255,0.02);border-radius:12px;padding:16px 20px;border:1px solid rgba(255,255,255,0.04);">
+                                <div style="display:flex;align-items:center;gap:12px;">
+                                    <span style="font-size:24px;">🏪</span>
+                                    <div>
+                                        <div style="color:#8a8a9a;font-size:12px;">Active Stores</div>
+                                        <div style="color:#e0e0e0;font-size:20px;font-weight:700;" id="salesKpiStores">0</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- CHARTS VIEW - Full screen one beyond another -->
+                        <div id="salesChartsView" class="sales-sub-view">
+                            <div style="background:rgba(255,255,255,0.02);border-radius:12px;padding:24px;border:1px solid rgba(255,255,255,0.04);margin-bottom:24px;">
+                                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                                    <h3 style="color:#e0e0e0;font-size:16px;margin:0;">Sales by Store</h3>
+                                    <span style="color:#8a8a9a;font-size:12px;" id="salesCountByStore">0 stores</span>
+                                </div>
+                                <div style="height:400px;width:100%;"><canvas id="salesChartByStore"></canvas></div>
+                            </div>
+
+                            <div style="background:rgba(255,255,255,0.02);border-radius:12px;padding:24px;border:1px solid rgba(255,255,255,0.04);margin-bottom:24px;">
+                                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                                    <h3 style="color:#e0e0e0;font-size:16px;margin:0;">Customer Count by Store</h3>
+                                    <span style="color:#8a8a9a;font-size:12px;" id="salesCountCustomer">0 stores</span>
+                                </div>
+                                <div style="height:400px;width:100%;"><canvas id="salesChartCustomerCount"></canvas></div>
+                            </div>
+
+                            <div style="background:rgba(255,255,255,0.02);border-radius:12px;padding:24px;border:1px solid rgba(255,255,255,0.04);margin-bottom:24px;">
+                                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                                    <h3 style="color:#e0e0e0;font-size:16px;margin:0;">APC by Store</h3>
+                                    <span style="color:#8a8a9a;font-size:12px;" id="salesCountAPC">0 stores</span>
+                                </div>
+                                <div style="height:400px;width:100%;"><canvas id="salesChartAPC"></canvas></div>
+                            </div>
+
+                            <div style="background:rgba(255,255,255,0.02);border-radius:12px;padding:24px;border:1px solid rgba(255,255,255,0.04);margin-bottom:24px;">
+                                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                                    <h3 style="color:#e0e0e0;font-size:16px;margin:0;">Sales by Tender Type</h3>
+                                    <span style="color:#8a8a9a;font-size:12px;" id="salesCountTender">0 types</span>
+                                </div>
+                                <div style="height:400px;width:100%;"><canvas id="salesChartTender"></canvas></div>
+                            </div>
+                        </div>
+
+                        <!-- DAILY TREND VIEW -->
+                        <div id="salesTrendView" class="sales-sub-view" style="display:none;">
+                            <div style="background:rgba(255,255,255,0.02);border-radius:12px;padding:24px;border:1px solid rgba(255,255,255,0.04);">
+                                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                                    <h3 style="color:#e0e0e0;font-size:16px;margin:0;">Daily Sales Trend</h3>
+                                    <span style="color:#8a8a9a;font-size:12px;" id="salesCountTrend">0 days</span>
+                                </div>
+                                <div style="height:500px;width:100%;"><canvas id="salesChartTrend"></canvas></div>
+                            </div>
+                        </div>
+
+                        <!-- SALES SUMMARY VIEW - Shows all uploaded data -->
+                        <div id="salesSummaryView" class="sales-sub-view" style="display:none;">
+                            <div style="background:rgba(255,255,255,0.02);border-radius:12px;border:1px solid rgba(255,255,255,0.04);overflow:hidden;">
+                                <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid rgba(255,255,255,0.04);flex-wrap:wrap;gap:12px;">
+                                    <div style="display:flex;align-items:center;gap:12px;">
+                                        <span style="color:#e0e0e0;font-weight:600;">📋 Sales Summary</span>
+                                        <span style="color:#8a8a9a;font-size:12px;" id="salesTableRowCount">0 rows</span>
+                                    </div>
+                                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                                        <input type="text" id="salesTableSearch" placeholder="🔍 Search..." style="background:rgba(255,255,255,0.05);color:#e0e0e0;border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:6px 12px;font-size:13px;min-width:180px;">
+                                        <button onclick="if(window.salesModule) window.salesModule.clearTableFilters()" style="background:rgba(255,255,255,0.05);color:#8a8a9a;border:1px solid rgba(255,255,255,0.1);padding:6px 12px;border-radius:6px;font-size:13px;cursor:pointer;">✕ Clear</button>
+                                        <button onclick="if(window.salesModule) window.salesModule.downloadExcel()" style="background:#D4A574;color:#1a1a2e;border:none;padding:6px 16px;border-radius:6px;font-weight:600;font-size:13px;cursor:pointer;">📥 Excel</button>
+                                    </div>
+                                </div>
+                                <div id="salesTableContainer" style="padding:20px;overflow-x:auto;min-height:100px;">
+                                    <div style="color:#8a8a9a;text-align:center;padding:40px 0;">Upload sales data to see analysis</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            contentArea.appendChild(salesPage);
+            
+            if (hasData) {
+                setTimeout(() => {
+                    this.populateStoreFilter();
+                    this.renderSalesData();
+                }, 500);
+            }
+        }
+
+        switchView(view) {
+            this.currentView = view;
+            
+            const uploadView = document.getElementById('salesUploadView');
+            const analysisContainer = document.getElementById('salesAnalysisContainer');
+            const chartsView = document.getElementById('salesChartsView');
+            const trendView = document.getElementById('salesTrendView');
+            const summaryView = document.getElementById('salesSummaryView');
+            
+            if (view === 'upload') {
+                if (uploadView) uploadView.style.display = 'block';
+                if (analysisContainer) analysisContainer.style.display = 'none';
+            } else {
+                if (uploadView) uploadView.style.display = 'none';
+                if (analysisContainer) analysisContainer.style.display = 'block';
+                
+                // Show the appropriate sub-view
+                if (chartsView) chartsView.style.display = view === 'charts' ? 'block' : 'none';
+                if (trendView) trendView.style.display = view === 'trend' ? 'block' : 'none';
+                if (summaryView) summaryView.style.display = view === 'summary' ? 'block' : 'none';
+            }
+            
+            // Update nav active states
+            document.querySelectorAll('.sales-nav-item').forEach(item => {
+                const itemView = item.dataset.view;
+                if (itemView === view) {
+                    this.setActiveNavItem(item);
+                }
+            });
+        }
+
+        populateStoreFilter() {
+            const select = document.getElementById('salesStoreFilter');
+            if (!select || !this.salesData || this.salesData.length === 0) return;
+
+            const map = this.salesColumnMap;
+            const locNameCol = map.locationName || 'Location Name';
+            
+            const stores = new Set();
+            this.salesData.forEach(row => {
+                const name = String(row[locNameCol] || '').trim();
+                if (name) stores.add(name);
+            });
+
+            select.innerHTML = '<option value="all">All Stores</option>';
+            
+            const sortedStores = Array.from(stores).sort();
+            sortedStores.forEach(store => {
+                const option = document.createElement('option');
+                option.value = store;
+                option.textContent = store;
+                select.appendChild(option);
+            });
+        }
+
+        applyFilters() {
+            const storeFilter = document.getElementById('salesStoreFilter')?.value || 'all';
+            const dateStart = document.getElementById('salesDateStart')?.value || '';
+            const dateEnd = document.getElementById('salesDateEnd')?.value || '';
+
+            this.filters.store = storeFilter;
+            this.filters.dateRange.start = dateStart;
+            this.filters.dateRange.end = dateEnd;
+
+            this.renderSalesData();
+            this.updateFilterStatus();
+        }
+
+        clearFilters() {
+            const select = document.getElementById('salesStoreFilter');
+            const dateStart = document.getElementById('salesDateStart');
+            const dateEnd = document.getElementById('salesDateEnd');
+
+            if (select) select.value = 'all';
+            if (dateStart) dateStart.value = '';
+            if (dateEnd) dateEnd.value = '';
+
+            this.filters.store = 'all';
+            this.filters.dateRange.start = '';
+            this.filters.dateRange.end = '';
+
+            this.renderSalesData();
+            this.updateFilterStatus();
+        }
+
+        updateFilterStatus() {
+            const statusEl = document.getElementById('salesFilterStatus');
+            if (!statusEl) return;
+
+            const store = this.filters.store;
+            const start = this.filters.dateRange.start;
+            const end = this.filters.dateRange.end;
+
+            let parts = [];
+            if (store !== 'all') parts.push(`Store: ${store}`);
+            if (start && end) parts.push(`Date: ${start} to ${end}`);
+            else if (start) parts.push(`From: ${start}`);
+            else if (end) parts.push(`Until: ${end}`);
+
+            if (parts.length === 0) {
+                statusEl.textContent = 'Showing all data';
+                statusEl.style.color = '#8a8a9a';
+            } else {
+                statusEl.textContent = `Filtered: ${parts.join(' · ')}`;
+                statusEl.style.color = '#D4A574';
+            }
+        }
+
+        getFilteredData() {
+            if (!this.salesData || this.salesData.length === 0) return [];
+
+            const map = this.salesColumnMap;
+            const dateCol = map.date || 'Business Date';
+            const locNameCol = map.locationName || 'Location Name';
+            
+            const storeFilter = this.filters.store;
+            const dateStart = this.filters.dateRange.start;
+            const dateEnd = this.filters.dateRange.end;
+
+            let filtered = [...this.salesData];
+
+            if (storeFilter !== 'all') {
+                filtered = filtered.filter(row => {
+                    const storeName = String(row[locNameCol] || '').trim();
+                    return storeName === storeFilter;
+                });
+            }
+
+            if (dateStart || dateEnd) {
+                filtered = filtered.filter(row => {
+                    const rawDate = row[dateCol] || '';
+                    const date = this.parseDateForFilter(rawDate);
+                    if (!date) return true;
+
+                    if (dateStart) {
+                        const start = new Date(dateStart);
+                        start.setHours(0, 0, 0, 0);
+                        if (date < start) return false;
+                    }
+                    if (dateEnd) {
+                        const end = new Date(dateEnd);
+                        end.setHours(23, 59, 59, 999);
+                        if (date > end) return false;
+                    }
+                    return true;
+                });
+            }
+
+            return filtered;
+        }
+
+        bindEvents() {
+            const uploadBtn = document.getElementById('salesUploadBtn');
+            const fileInput = document.getElementById('salesFileInput');
+            const removeBtn = document.getElementById('salesRemoveBtn');
+            const applyBtn = document.getElementById('salesApplyFilters');
+            const clearBtn = document.getElementById('salesClearFilters');
+            const searchInput = document.getElementById('salesTableSearch');
+
+            if (uploadBtn) {
+                uploadBtn.onclick = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (fileInput && fileInput.files && fileInput.files.length > 0) {
+                        this.handleFile(fileInput.files[0]);
+                    } else if (fileInput) {
+                        fileInput.click();
+                    }
+                };
+            }
+
+            if (fileInput) {
+                fileInput.onchange = function() {
+                    const display = document.getElementById('salesFileNameDisplay');
+                    if (this.files && this.files.length > 0 && display) {
+                        display.textContent = this.files[0].name;
+                        display.style.color = '#D4A574';
+                    }
+                };
+            }
+
+            if (removeBtn) {
+                removeBtn.onclick = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.clearData();
+                };
+            }
+
+            if (applyBtn) {
+                applyBtn.onclick = () => {
+                    this.applyFilters();
+                };
+            }
+
+            if (clearBtn) {
+                clearBtn.onclick = () => {
+                    this.clearFilters();
+                };
+            }
+
+            if (searchInput) {
+                searchInput.oninput = () => {
+                    this.filterTable();
+                };
+            }
+
+            document.getElementById('salesDateStart')?.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') this.applyFilters();
+            });
+            document.getElementById('salesDateEnd')?.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') this.applyFilters();
+            });
+
+            document.getElementById('salesStoreFilter')?.addEventListener('change', () => {
+                this.applyFilters();
+            });
+
+            document.querySelectorAll('.sales-nav-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    this.showSalesPage();
+                });
+            });
+        }
+
+        handleFile(file) {
+            if (!file || this.isProcessing) return;
+            
+            console.log('📄 Processing file:', file.name);
+            this.isProcessing = true;
+            this.showStatusMessage('⏳ Processing file...', '#f39c12');
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    
+                    const rawArray = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: '' });
+                    console.log(`📊 Raw rows from Excel: ${rawArray.length}`);
+                    
+                    let headerRowIndex = -1;
+                    let headerRow = null;
+                    
+                    for (let i = 0; i < Math.min(rawArray.length, 20); i++) {
+                        const row = rawArray[i];
+                        if (!row || row.length === 0) continue;
+                        
+                        const rowStr = row.join(' ').toLowerCase();
+                        if (rowStr.includes('business date') && 
+                            rowStr.includes('location number') && 
+                            rowStr.includes('location name') &&
+                            rowStr.includes('tender name')) {
+                            headerRowIndex = i;
+                            headerRow = row;
+                            console.log(`✅ Found header row at index ${i}:`, headerRow);
+                            break;
+                        }
+                    }
+                    
+                    if (headerRowIndex === -1) {
+                        for (let i = 0; i < Math.min(rawArray.length, 10); i++) {
+                            const row = rawArray[i];
+                            if (!row || row.length === 0) continue;
+                            const numCount = row.filter(v => typeof v === 'number' && v > 0).length;
+                            if (numCount >= 2) {
+                                if (i > 0) {
+                                    headerRowIndex = i - 1;
+                                    headerRow = rawArray[headerRowIndex];
+                                    console.log(`✅ Found header row at index ${headerRowIndex} (before data):`, headerRow);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    
+                    if (headerRowIndex === -1) {
+                        headerRowIndex = 0;
+                        headerRow = rawArray[0];
+                        console.log('⚠️ Using first row as headers:', headerRow);
+                    }
+                    
+                    const cleanHeaders = headerRow.map(h => String(h).trim());
+                    console.log('📋 Clean headers:', cleanHeaders);
+                    
+                    const jsonData = [];
+                    for (let i = headerRowIndex + 1; i < rawArray.length; i++) {
+                        const row = rawArray[i];
+                        if (!row || row.length === 0) continue;
+                        
+                        const hasData = row.some(v => v !== '' && v !== null && v !== undefined);
+                        if (!hasData) continue;
+                        
+                        const rowData = {};
+                        cleanHeaders.forEach((header, idx) => {
+                            if (header) {
+                                rowData[header] = row[idx] !== undefined ? row[idx] : '';
+                            }
+                        });
+                        
+                        const values = Object.values(rowData);
+                        if (values.some(v => v !== '' && v !== null && v !== undefined)) {
+                            jsonData.push(rowData);
+                        }
+                    }
+                    
+                    console.log(`📊 Clean data rows: ${jsonData.length}`);
+                    
+                    if (jsonData && jsonData.length > 0) {
+                        this.salesData = jsonData;
+                        this.salesFileName = file.name || 'sales_data';
+                        
+                        this.buildColumnMap(Object.keys(this.salesData[0]));
+                        console.log('📋 Column map:', this.salesColumnMap);
+                        
+                        const display = document.getElementById('salesFileNameDisplay');
+                        if (display) {
+                            display.textContent = this.salesFileName;
+                            display.style.color = '#4CAF50';
+                        }
+                        
+                        this.saveToLocalStorage();
+                        
+                        setTimeout(() => {
+                            this.populateStoreFilter();
+                            this.renderSalesData();
+                            this.updateDataStatusBadge();
+                            this.switchView('charts');
+                            
+                            const badge = document.getElementById('salesBadge');
+                            if (badge) badge.textContent = this.salesData.length;
+                            
+                            this.showStatusMessage(`✅ Sales data loaded: ${this.salesData.length} rows`, '#4CAF50');
+                            this.showSalesPage();
+                        }, 300);
+                        
+                    } else {
+                        alert('No valid data found in file. Please check the file format.');
+                        this.showStatusMessage('❌ No valid data found', '#e74c3c');
+                    }
+                } catch (err) {
+                    console.error('❌ Error processing file:', err);
+                    alert('Error processing file: ' + err.message);
+                    this.showStatusMessage('❌ Error processing file', '#e74c3c');
+                }
+                this.isProcessing = false;
+            };
+            
+            reader.onerror = (err) => {
+                console.error('❌ File read error:', err);
+                this.isProcessing = false;
+                alert('Error reading file');
+                this.showStatusMessage('❌ Error reading file', '#e74c3c');
+            };
+            
+            reader.readAsArrayBuffer(file);
+        }
+
+        buildColumnMap(keys) {
+            const map = {};
+            
+            keys.forEach(key => {
+                const lower = String(key).toLowerCase().trim();
+                if (lower === 'business date') {
+                    map.date = key;
+                } else if (lower === 'location number') {
+                    map.locationNumber = key;
+                } else if (lower === 'location name') {
+                    map.locationName = key;
+                } else if (lower === 'tender name') {
+                    map.tenderName = key;
+                } else if (lower === 'tender count') {
+                    map.tenderCount = key;
+                } else if (lower === 'tender amount') {
+                    map.tenderAmount = key;
+                } else if (lower === 'revenue center name') {
+                    map.revenueCenter = key;
+                }
+            });
+            
+            if (!map.date) {
+                const dateKey = keys.find(k => String(k).toLowerCase().includes('business date'));
+                if (dateKey) map.date = dateKey;
+            }
+            if (!map.locationNumber) {
+                const locNumKey = keys.find(k => String(k).toLowerCase().includes('location number'));
+                if (locNumKey) map.locationNumber = locNumKey;
+            }
+            if (!map.locationName) {
+                const locNameKey = keys.find(k => String(k).toLowerCase().includes('location name'));
+                if (locNameKey) map.locationName = locNameKey;
+            }
+            if (!map.tenderName) {
+                const tenderKey = keys.find(k => String(k).toLowerCase().includes('tender name'));
+                if (tenderKey) map.tenderName = tenderKey;
+            }
+            if (!map.tenderCount) {
+                const countKey = keys.find(k => String(k).toLowerCase().includes('tender count'));
+                if (countKey) map.tenderCount = countKey;
+            }
+            if (!map.tenderAmount) {
+                const amountKey = keys.find(k => String(k).toLowerCase().includes('tender amount'));
+                if (amountKey) map.tenderAmount = amountKey;
+            }
+            
+            this.salesColumnMap = map;
+        }
+
+        renderSalesData() {
+            if (!this.salesData || this.salesData.length === 0) {
+                this.clearSalesDisplay();
+                return;
+            }
+
+            console.log(`📊 Rendering sales data with filters...`);
+            
+            try {
+                const filteredData = this.getFilteredData();
+                console.log(`📊 Filtered data: ${filteredData.length} rows (from ${this.salesData.length} total)`);
+                
+                if (filteredData.length === 0) {
+                    this.showNoDataMessage('No data matches the current filters');
+                    return;
+                }
+                
+                const processedData = this.processSalesData(filteredData);
+                console.log('✅ Data processed:', {
+                    stores: processedData.storeData.length,
+                    days: processedData.dailyData.length,
+                    tenders: processedData.tenderData.length,
+                    totalRevenue: processedData.totalRevenue,
+                    totalCustomers: processedData.totalCustomers,
+                    avgAPC: processedData.avgAPC
+                });
+                
+                this.processedData = processedData;
+                this.filteredData = filteredData;
+                
+                this.updateKPIs(processedData);
+                this.renderCharts(processedData);
+                this.renderTable(processedData);
+                
+                const countEl = document.getElementById('salesTableRowCount');
+                if (countEl) countEl.textContent = `${filteredData.length} rows`;
+                
+                this.updateDataStatusBadge();
+                console.log('✅ Sales data rendering complete');
+                
+            } catch(e) {
+                console.error('❌ Error rendering sales data:', e);
+                this.showStatusMessage('❌ Error rendering data: ' + e.message, '#e74c3c');
+            }
+        }
+
+        showNoDataMessage(message) {
+            ['salesKpiRevenue', 'salesKpiTotal', 'salesKpiAPC', 'salesKpiStores'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = '0';
+            });
+            
+            this.destroyAllCharts();
+            
+            const container = document.getElementById('salesTableContainer');
+            if (container) {
+                container.innerHTML = `<div style="color:#8a8a9a;text-align:center;padding:40px 0;">${message}</div>`;
+            }
+            
+            const countEl = document.getElementById('salesTableRowCount');
+            if (countEl) countEl.textContent = '0 rows';
+        }
+
+        destroyAllCharts() {
+            Object.keys(this.salesCharts).forEach(key => {
+                if (this.salesCharts[key]) {
+                    try {
+                        this.salesCharts[key].destroy();
+                    } catch(e) {}
+                    delete this.salesCharts[key];
+                }
+            });
+            this.salesCharts = {};
+        }
+
+        processSalesData(data) {
+            const map = this.salesColumnMap;
+            
+            const dateCol = map.date || 'Business Date';
+            const locNumCol = map.locationNumber || 'Location Number';
+            const locNameCol = map.locationName || 'Location Name';
+            const tenderCol = map.tenderName || 'Tender Name';
+            const countCol = map.tenderCount || 'Tender Count';
+            const amountCol = map.tenderAmount || 'Tender Amount';
+            
+            const storeData = {};
+            const dailyData = {};
+            const tenderData = {};
+            let totalRevenue = 0;
+            let totalCustomers = 0;
+            
+            data.forEach((row) => {
+                const rawDate = row[dateCol] || '';
+                const storeName = String(row[locNameCol] || '').trim() || 'Unknown Store';
+                const storeNum = String(row[locNumCol] || '').trim() || '';
+                const tender = String(row[tenderCol] || '').trim() || 'Unknown';
+                const customers = parseFloat(row[countCol]) || 0;
+                const sales = parseFloat(row[amountCol]) || 0;
+                
+                const formattedDate = this.formatDate(rawDate);
+                
+                if (sales === 0 && customers === 0) return;
+                
+                const storeKey = storeNum || storeName;
+                
+                if (!storeData[storeKey]) {
+                    storeData[storeKey] = { 
+                        name: storeName, 
+                        number: storeNum, 
+                        sales: 0, 
+                        customers: 0,
+                        apc: 0
+                    };
+                }
+                storeData[storeKey].sales += sales;
+                storeData[storeKey].customers += customers;
+                
+                if (formattedDate && formattedDate !== 'Unknown') {
+                    if (!dailyData[formattedDate]) {
+                        dailyData[formattedDate] = { sales: 0, customers: 0, apc: 0 };
+                    }
+                    dailyData[formattedDate].sales += sales;
+                    dailyData[formattedDate].customers += customers;
+                }
+                
+                if (tender && tender !== 'Unknown') {
+                    if (!tenderData[tender]) {
+                        tenderData[tender] = { sales: 0, customers: 0 };
+                    }
+                    tenderData[tender].sales += sales;
+                    tenderData[tender].customers += customers;
+                }
+                
+                totalRevenue += sales;
+                totalCustomers += customers;
+            });
+            
+            Object.values(storeData).forEach(store => {
+                store.apc = store.customers > 0 ? store.sales / store.customers : 0;
+            });
+            
+            Object.values(dailyData).forEach(day => {
+                day.apc = day.customers > 0 ? day.sales / day.customers : 0;
+            });
+            
+            const sortedStores = Object.values(storeData)
+                .sort((a, b) => b.sales - a.sales)
+                .slice(0, 20);
+            
+            const sortedDates = Object.entries(dailyData)
+                .sort((a, b) => {
+                    try {
+                        const parseDate = (str) => {
+                            const parts = str[0].split('-');
+                            return new Date(parts[2], parts[1] - 1, parts[0]);
+                        };
+                        return parseDate(a) - parseDate(b);
+                    } catch(e) {
+                        return a[0].localeCompare(b[0]);
+                    }
+                })
+                .map(([date, data]) => ({ date, ...data }));
+            
+            const sortedTenders = Object.entries(tenderData)
+                .map(([name, data]) => ({ name, ...data }))
+                .sort((a, b) => b.sales - a.sales);
+            
+            const avgAPC = totalCustomers > 0 ? totalRevenue / totalCustomers : 0;
+            
+            return {
+                storeData: sortedStores,
+                dailyData: sortedDates,
+                tenderData: sortedTenders,
+                totalRevenue: totalRevenue,
+                totalCustomers: totalCustomers,
+                avgAPC: avgAPC,
+                totalStores: Object.keys(storeData).length,
+                rawData: data
+            };
+        }
+
+        updateKPIs(processedData) {
+            const elements = {
+                revenue: document.getElementById('salesKpiRevenue'),
+                total: document.getElementById('salesKpiTotal'),
+                apc: document.getElementById('salesKpiAPC'),
+                stores: document.getElementById('salesKpiStores')
+            };
+            
+            if (elements.revenue) elements.revenue.textContent = processedData.totalRevenue.toFixed(2);
+            if (elements.total) elements.total.textContent = processedData.totalCustomers.toFixed(0);
+            if (elements.apc) elements.apc.textContent = processedData.avgAPC.toFixed(2);
+            if (elements.stores) elements.stores.textContent = processedData.totalStores;
+        }
+
+        renderCharts(processedData) {
+            this.destroyAllCharts();
+
+            const colors = [
+                '#1a237e', '#283593', '#303f9f', '#3949ab', '#3f51b5',
+                '#4a148c', '#6a1b9a', '#7b1fa2', '#8e24aa', '#9c27b0',
+                '#1b5e20', '#2e7d32', '#388e3c', '#43a047', '#4caf50',
+                '#bf360c', '#d84315', '#e64a19', '#f4511e', '#ff5722'
+            ];
+
+            // Update counters
+            const countByStore = document.getElementById('salesCountByStore');
+            if (countByStore) countByStore.textContent = `${processedData.storeData.length} stores`;
+            
+            const countCustomer = document.getElementById('salesCountCustomer');
+            if (countCustomer) countCustomer.textContent = `${processedData.storeData.length} stores`;
+            
+            const countAPC = document.getElementById('salesCountAPC');
+            if (countAPC) countAPC.textContent = `${processedData.storeData.length} stores`;
+            
+            const countTender = document.getElementById('salesCountTender');
+            if (countTender) countTender.textContent = `${processedData.tenderData.length} types`;
+            
+            const countTrend = document.getElementById('salesCountTrend');
+            if (countTrend) countTrend.textContent = `${processedData.dailyData.length} days`;
+
+            // Sales by Store
+            const storeCtx = document.getElementById('salesChartByStore');
+            if (storeCtx && processedData.storeData.length > 0) {
+                try {
+                    const labels = processedData.storeData.map(s => 
+                        s.name.length > 15 ? s.name.substring(0, 15) + '...' : s.name
+                    );
+                    const values = processedData.storeData.map(s => s.sales);
+                    
+                    this.salesCharts.store = new Chart(storeCtx.getContext('2d'), {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Sales (SAR)',
+                                data: values,
+                                backgroundColor: colors.slice(0, processedData.storeData.length),
+                                borderRadius: 4,
+                                borderColor: 'rgba(255,255,255,0.4)',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: { font: { size: 10 }, color: '#8a8a9a' },
+                                    grid: { color: 'rgba(255,255,255,0.04)' }
+                                },
+                                x: {
+                                    ticks: { font: { size: 9 }, color: '#8a8a9a', maxRotation: 30 }
+                                }
+                            }
+                        }
+                    });
+                } catch(e) {
+                    console.error('Error creating store chart:', e);
+                }
+            }
+
+            // Customer Count
+            const customerCtx = document.getElementById('salesChartCustomerCount');
+            if (customerCtx && processedData.storeData.length > 0) {
+                try {
+                    const labels = processedData.storeData.map(s => 
+                        s.name.length > 15 ? s.name.substring(0, 15) + '...' : s.name
+                    );
+                    const values = processedData.storeData.map(s => s.customers);
+                    
+                    this.salesCharts.customer = new Chart(customerCtx.getContext('2d'), {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Customer Count',
+                                data: values,
+                                backgroundColor: '#4CAF50',
+                                borderRadius: 4,
+                                borderColor: 'rgba(255,255,255,0.4)',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: { font: { size: 10 }, color: '#8a8a9a' },
+                                    grid: { color: 'rgba(255,255,255,0.04)' }
+                                },
+                                x: {
+                                    ticks: { font: { size: 9 }, color: '#8a8a9a', maxRotation: 30 }
+                                }
+                            }
+                        }
+                    });
+                } catch(e) {
+                    console.error('Error creating customer chart:', e);
+                }
+            }
+
+            // APC
+            const apcCtx = document.getElementById('salesChartAPC');
+            if (apcCtx && processedData.storeData.length > 0) {
+                try {
+                    const labels = processedData.storeData.map(s => 
+                        s.name.length > 15 ? s.name.substring(0, 15) + '...' : s.name
+                    );
+                    const values = processedData.storeData.map(s => s.apc);
+                    
+                    this.salesCharts.apc = new Chart(apcCtx.getContext('2d'), {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'APC (SAR/Customer)',
+                                data: values,
+                                backgroundColor: '#FF6F00',
+                                borderRadius: 4,
+                                borderColor: 'rgba(255,255,255,0.4)',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: { font: { size: 10 }, color: '#8a8a9a' },
+                                    grid: { color: 'rgba(255,255,255,0.04)' }
+                                },
+                                x: {
+                                    ticks: { font: { size: 9 }, color: '#8a8a9a', maxRotation: 30 }
+                                }
+                            }
+                        }
+                    });
+                } catch(e) {
+                    console.error('Error creating APC chart:', e);
+                }
+            }
+
+            // Daily Trend - Aligned with Sales and Customer Count
+            const trendCtx = document.getElementById('salesChartTrend');
+            if (trendCtx && processedData.dailyData.length > 0) {
+                try {
+                    const labels = processedData.dailyData.map(d => d.date);
+                    const salesData = processedData.dailyData.map(d => d.sales);
+                    const customerData = processedData.dailyData.map(d => d.customers);
+                    const apcData = processedData.dailyData.map(d => d.apc);
+                    
+                    this.salesCharts.trend = new Chart(trendCtx.getContext('2d'), {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                {
+                                    label: 'Sales (SAR)',
+                                    data: salesData,
+                                    borderColor: '#1a237e',
+                                    backgroundColor: 'rgba(26, 35, 126, 0.15)',
+                                    fill: true,
+                                    tension: 0.4,
+                                    pointRadius: 4,
+                                    pointBackgroundColor: '#1a237e',
+                                    borderWidth: 2,
+                                    yAxisID: 'y'
+                                },
+                                {
+                                    label: 'Customers',
+                                    data: customerData,
+                                    borderColor: '#4CAF50',
+                                    backgroundColor: 'rgba(76, 175, 80, 0.15)',
+                                    fill: true,
+                                    tension: 0.4,
+                                    pointRadius: 4,
+                                    pointBackgroundColor: '#4CAF50',
+                                    borderWidth: 2,
+                                    yAxisID: 'y'
+                                },
+                                {
+                                    label: 'APC',
+                                    data: apcData,
+                                    borderColor: '#FF6F00',
+                                    backgroundColor: 'rgba(255, 111, 0, 0.1)',
+                                    fill: true,
+                                    tension: 0.4,
+                                    pointRadius: 4,
+                                    pointBackgroundColor: '#FF6F00',
+                                    borderWidth: 2,
+                                    borderDash: [5, 5],
+                                    yAxisID: 'y'
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: {
+                                mode: 'index',
+                                intersect: false
+                            },
+                            plugins: {
+                                legend: {
+                                    labels: { 
+                                        color: '#e0e0e0', 
+                                        font: { size: 10 },
+                                        usePointStyle: true,
+                                        pointStyle: 'circle'
+                                    },
+                                    position: 'top'
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    position: 'left',
+                                    beginAtZero: true,
+                                    ticks: { font: { size: 10 }, color: '#8a8a9a' },
+                                    grid: { color: 'rgba(255,255,255,0.04)' },
+                                    title: {
+                                        display: true,
+                                        text: 'Values',
+                                        color: '#8a8a9a',
+                                        font: { size: 10 }
+                                    }
+                                },
+                                x: {
+                                    ticks: { 
+                                        font: { size: 9 }, 
+                                        color: '#8a8a9a', 
+                                        maxRotation: 30
+                                    },
+                                    grid: { color: 'rgba(255,255,255,0.04)' }
+                                }
+                            }
+                        }
+                    });
+                } catch(e) {
+                    console.error('Error creating trend chart:', e);
+                }
+            }
+
+            // Tender
+            const tenderCtx = document.getElementById('salesChartTender');
+            if (tenderCtx && processedData.tenderData.length > 0) {
+                try {
+                    const tenderColors = ['#1a237e', '#4a148c', '#1b5e20', '#bf360c', '#3e2723', '#283593', '#6a1b9a', '#2e7d32', '#d84315', '#4e342e'];
+                    const labels = processedData.tenderData.map(t => t.name);
+                    const values = processedData.tenderData.map(t => t.sales);
+                    
+                    this.salesCharts.tender = new Chart(tenderCtx.getContext('2d'), {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Sales (SAR)',
+                                data: values,
+                                backgroundColor: tenderColors.slice(0, processedData.tenderData.length),
+                                borderRadius: 4,
+                                borderColor: 'rgba(255,255,255,0.4)',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'y',
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false }
+                            },
+                            scales: {
+                                x: {
+                                    beginAtZero: true,
+                                    ticks: { font: { size: 10 }, color: '#8a8a9a' },
+                                    grid: { color: 'rgba(255,255,255,0.04)' }
+                                },
+                                y: {
+                                    ticks: { font: { size: 9 }, color: '#8a8a9a' }
+                                }
+                            }
+                        }
+                    });
+                } catch(e) {
+                    console.error('Error creating tender chart:', e);
+                }
+            }
+        }
+
+        renderTable(processedData) {
+            const container = document.getElementById('salesTableContainer');
+            const countEl = document.getElementById('salesTableRowCount');
+            
+            if (!container) return;
+
+            const searchTerm = document.getElementById('salesTableSearch')?.value?.toLowerCase() || '';
+            const data = processedData?.rawData || this.salesData;
+            
+            if (!data || data.length === 0) {
+                container.innerHTML = '<div style="color:#8a8a9a;text-align:center;padding:40px 0;">No data available</div>';
+                if (countEl) countEl.textContent = '0 rows';
+                return;
+            }
+            
+            const map = this.salesColumnMap;
+            const dateCol = map.date || 'Business Date';
+            const locNameCol = map.locationName || 'Location Name';
+            const locNumCol = map.locationNumber || 'Location Number';
+            const tenderCol = map.tenderName || 'Tender Name';
+            const countCol = map.tenderCount || 'Tender Count';
+            const amountCol = map.tenderAmount || 'Tender Amount';
+            
+            // Show all uploaded data with date, store, tender details
+            let tableData = data.map(row => {
+                const date = this.formatDate(row[dateCol] || '');
+                const storeName = String(row[locNameCol] || '').trim() || 'Unknown';
+                const storeNum = String(row[locNumCol] || '').trim() || '';
+                const tender = String(row[tenderCol] || '').trim() || 'Unknown';
+                const customers = parseFloat(row[countCol]) || 0;
+                const sales = parseFloat(row[amountCol]) || 0;
+                
+                return {
+                    date: date,
+                    storeName: storeName,
+                    storeNum: storeNum,
+                    tender: tender,
+                    customers: customers,
+                    sales: sales,
+                    apc: customers > 0 ? sales / customers : 0
+                };
+            });
+            
+            // Apply search filter
+            if (searchTerm) {
+                tableData = tableData.filter(row => 
+                    row.storeName.toLowerCase().includes(searchTerm) || 
+                    row.storeNum.includes(searchTerm) ||
+                    row.tender.toLowerCase().includes(searchTerm) ||
+                    row.date.includes(searchTerm)
+                );
+            }
+
+            if (countEl) countEl.textContent = `${tableData.length} rows`;
+
+            if (tableData.length === 0) {
+                container.innerHTML = '<div style="color:#8a8a9a;text-align:center;padding:40px 0;">No matching records found</div>';
+                return;
+            }
+
+            // Sort by date descending (newest first)
+            tableData.sort((a, b) => {
+                try {
+                    const parseDate = (str) => {
+                        const parts = str.split('-');
+                        return new Date(parts[2], parts[1] - 1, parts[0]);
+                    };
+                    return parseDate(b.date) - parseDate(a.date);
+                } catch(e) {
+                    return b.date.localeCompare(a.date);
+                }
+            });
+
+            let html = `<table style="width:100%;border-collapse:collapse;font-size:13px;">
+                <thead>
+                    <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                        <th style="padding:8px 12px;text-align:left;color:#8a8a9a;font-weight:500;">#</th>
+                        <th style="padding:8px 12px;text-align:left;color:#8a8a9a;font-weight:500;">Date</th>
+                        <th style="padding:8px 12px;text-align:left;color:#8a8a9a;font-weight:500;">Store Name</th>
+                        <th style="padding:8px 12px;text-align:left;color:#8a8a9a;font-weight:500;">Location #</th>
+                        <th style="padding:8px 12px;text-align:left;color:#8a8a9a;font-weight:500;">Tender</th>
+                        <th style="padding:8px 12px;text-align:right;color:#8a8a9a;font-weight:500;">Customers</th>
+                        <th style="padding:8px 12px;text-align:right;color:#8a8a9a;font-weight:500;">Sales (SAR)</th>
+                        <th style="padding:8px 12px;text-align:right;color:#8a8a9a;font-weight:500;">APC</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+            tableData.forEach((row, index) => {
+                html += `<tr style="border-bottom:1px solid rgba(255,255,255,0.03);">
+                    <td style="padding:8px 12px;color:#8a8a9a;">${index + 1}</td>
+                    <td style="padding:8px 12px;color:#e0e0e0;">${row.date}</td>
+                    <td style="padding:8px 12px;color:#e0e0e0;">${row.storeName}</td>
+                    <td style="padding:8px 12px;color:#8a8a9a;">${row.storeNum || '-'}</td>
+                    <td style="padding:8px 12px;color:#8a8a9a;">${row.tender}</td>
+                    <td style="padding:8px 12px;text-align:right;color:#e0e0e0;">${row.customers.toFixed(0)}</td>
+                    <td style="padding:8px 12px;text-align:right;color:#e0e0e0;">${row.sales.toFixed(2)}</td>
+                    <td style="padding:8px 12px;text-align:right;color:#FF6F00;font-weight:600;">${row.apc.toFixed(2)}</td>
+                </tr>`;
+            });
+
+            // Calculate totals
+            const totalSales = tableData.reduce((sum, r) => sum + r.sales, 0);
+            const totalCustomers = tableData.reduce((sum, r) => sum + r.customers, 0);
+            const totalAPC = totalCustomers > 0 ? totalSales / totalCustomers : 0;
+            
+            html += `<tr style="background:rgba(212,165,116,0.08);border-top:2px solid #D4A574;font-weight:600;">
+                <td colspan="5" style="padding:8px 12px;color:#D4A574;text-align:right;">TOTAL</td>
+                <td style="padding:8px 12px;text-align:right;color:#D4A574;">${totalCustomers.toFixed(0)}</td>
+                <td style="padding:8px 12px;text-align:right;color:#D4A574;">${totalSales.toFixed(2)}</td>
+                <td style="padding:8px 12px;text-align:right;color:#FF6F00;">${totalAPC.toFixed(2)}</td>
+            </tr>`;
+
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        }
+
+        filterTable() {
+            if (this.salesData && this.salesData.length > 0) {
+                const filteredData = this.getFilteredData();
+                if (filteredData.length > 0) {
+                    const processed = this.processSalesData(filteredData);
+                    this.renderTable(processed);
+                } else {
+                    const container = document.getElementById('salesTableContainer');
+                    if (container) {
+                        container.innerHTML = '<div style="color:#8a8a9a;text-align:center;padding:40px 0;">No data matches the current filters</div>';
+                    }
+                }
+            }
+        }
+
+        clearTableFilters() {
+            const searchInput = document.getElementById('salesTableSearch');
+            if (searchInput) searchInput.value = '';
+            this.filterTable();
+        }
+
+        clearData() {
+            this.salesData = [];
+            this.salesFileName = '';
+            this.processedData = null;
+            this.filteredData = null;
+            
+            localStorage.removeItem('dunkin_sales_data');
+            localStorage.removeItem('dunkin_sales_filename');
+            
+            const display = document.getElementById('salesFileNameDisplay');
+            if (display) {
+                display.textContent = 'Drop your file here or click to browse';
+                display.style.color = '#8a8a9a';
+            }
+            
+            const fileInput = document.getElementById('salesFileInput');
+            if (fileInput) fileInput.value = '';
+            
+            this.clearSalesDisplay();
+            this.updateDataStatusBadge();
+            this.switchView('upload');
+            
+            const badge = document.getElementById('salesBadge');
+            if (badge) badge.textContent = '0';
+            
+            this.showStatusMessage('🗑️ Sales data removed', '#e74c3c');
+        }
+
+        clearSalesDisplay() {
+            ['salesKpiRevenue', 'salesKpiTotal', 'salesKpiAPC', 'salesKpiStores'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = '0';
+            });
+            
+            this.destroyAllCharts();
+            
+            const container = document.getElementById('salesTableContainer');
+            if (container) {
+                container.innerHTML = '<div style="color:#8a8a9a;text-align:center;padding:40px 0;">Upload sales data to see analysis</div>';
+            }
+            
+            const countEl = document.getElementById('salesTableRowCount');
+            if (countEl) countEl.textContent = '0 rows';
+        }
+
+        updateDataStatusBadge() {
+            const badge = document.getElementById('dataStatusBadge');
+            if (!badge) return;
+
+            const mainHasData = window.mainData && window.mainData.length > 0;
+            const salesHasData = this.salesData && this.salesData.length > 0;
+
+            if (mainHasData && salesHasData) {
+                badge.textContent = `✅ Main: ${window.mainData.length} rows · Sales: ${this.salesData.length} rows`;
+                badge.className = 'data-status-badge loaded';
+            } else if (mainHasData) {
+                badge.textContent = `✅ Main: ${window.mainData.length} rows`;
+                badge.className = 'data-status-badge partial';
+            } else if (salesHasData) {
+                badge.textContent = `✅ Sales: ${this.salesData.length} rows`;
+                badge.className = 'data-status-badge partial';
+            } else {
+                badge.textContent = '📂 No Data';
+                badge.className = 'data-status-badge empty';
+            }
+        }
+
+        showStatusMessage(message, color) {
+            const statusMsg = document.getElementById('statusMessage');
+            if (statusMsg) {
+                statusMsg.innerText = message;
+                if (color) statusMsg.style.color = color;
+            }
+        }
+
+        downloadExcel() {
+            const data = this.filteredData || this.salesData;
+            if (!data || data.length === 0) {
+                alert('No sales data available to download');
+                return;
+            }
+
+            const map = this.salesColumnMap;
+            const dateCol = map.date || 'Business Date';
+            const locNameCol = map.locationName || 'Location Name';
+            const locNumCol = map.locationNumber || 'Location Number';
+            const tenderCol = map.tenderName || 'Tender Name';
+            const countCol = map.tenderCount || 'Tender Count';
+            const amountCol = map.tenderAmount || 'Tender Amount';
+            
+            const exportData = data.map(row => {
+                const date = this.formatDate(row[dateCol] || '');
+                const storeName = String(row[locNameCol] || '').trim() || 'Unknown';
+                const storeNum = String(row[locNumCol] || '').trim() || '';
+                const tender = String(row[tenderCol] || '').trim() || 'Unknown';
+                const customers = parseFloat(row[countCol]) || 0;
+                const sales = parseFloat(row[amountCol]) || 0;
+                
+                return {
+                    'Date': date,
+                    'Store Name': storeName,
+                    'Location #': storeNum,
+                    'Tender': tender,
+                    'Customers': customers.toFixed(0),
+                    'Sales (SAR)': sales.toFixed(2),
+                    'APC (SAR/Customer)': customers > 0 ? (sales / customers).toFixed(2) : 0
+                };
+            });
+
+            try {
+                const ws = XLSX.utils.json_to_sheet(exportData);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Sales Data');
+                const suffix = this.filters.store !== 'all' ? `_${this.filters.store}` : '';
+                XLSX.writeFile(wb, `Sales_Data${suffix}_${new Date().toISOString().slice(0,10)}.xlsx`);
+                this.showStatusMessage('✅ Excel downloaded successfully', '#4CAF50');
+            } catch(e) {
+                alert('Error downloading Excel: ' + e.message);
+            }
+        }
+    }
+
+    // ===================== INITIALIZE =====================
+    window.salesModule = new SalesModule();
+
+    function initSalesModule() {
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                setTimeout(() => {
+                    if (window.salesModule) {
+                        window.salesModule.init();
+                        console.log('💰 Sales Module initialized');
+                    }
+                }, 1500);
+            });
+        } else {
+            setTimeout(() => {
+                if (window.salesModule) {
+                    window.salesModule.init();
+                    console.log('💰 Sales Module initialized');
+                }
+            }, 1500);
+        }
+    }
+
+    initSalesModule();
+
 })();
 </script>
 </body>
