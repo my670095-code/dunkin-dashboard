@@ -297,6 +297,7 @@
             display: flex;
             flex: 1;
             overflow: hidden;
+            position: relative;
         }
 
         /* ---------- SIDEBAR ---------- */
@@ -308,6 +309,18 @@
             padding: 16px 0;
             overflow-y: auto;
             flex-shrink: 0;
+            transition: width 0.3s ease, min-width 0.3s ease, opacity 0.3s ease;
+            position: relative;
+            z-index: 10;
+        }
+
+        .sidebar.collapsed {
+            width: 0;
+            min-width: 0;
+            padding: 0;
+            overflow: hidden;
+            border-right: none;
+            opacity: 0;
         }
 
         .sidebar::-webkit-scrollbar {
@@ -437,12 +450,66 @@
             white-space: nowrap;
         }
 
+        /* ---------- SIDEBAR TOGGLE BUTTON ---------- */
+        .sidebar-toggle {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 20;
+            background: rgba(212, 165, 116, 0.15);
+            border: 1px solid rgba(212, 165, 116, 0.25);
+            border-left: none;
+            border-radius: 0 8px 8px 0;
+            color: #D4A574;
+            padding: 8px 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 48px;
+            min-width: 20px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            background: rgba(18, 18, 30, 0.9);
+        }
+
+        .sidebar-toggle:hover {
+            background: rgba(212, 165, 116, 0.25);
+            border-color: #D4A574;
+            box-shadow: 0 0 20px rgba(212, 165, 116, 0.1);
+        }
+
+        .sidebar-toggle .toggle-icon {
+            writing-mode: vertical-rl;
+            letter-spacing: 2px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .sidebar.collapsed + .sidebar-toggle {
+            left: 0;
+            border-radius: 0 8px 8px 0;
+            border-left: none;
+            border: 1px solid rgba(212, 165, 116, 0.25);
+            border-left: none;
+        }
+
+        .sidebar:not(.collapsed) + .sidebar-toggle {
+            left: 220px;
+            border-radius: 0 8px 8px 0;
+            border-left: none;
+        }
+
         /* ---------- CONTENT AREA ---------- */
         .content-area {
             flex: 1;
             padding: 20px 28px;
             overflow-y: auto;
             background: rgba(0, 0, 0, 0.2);
+            transition: margin-left 0.3s ease;
         }
 
         .content-area::-webkit-scrollbar {
@@ -2294,6 +2361,18 @@
             .dash-header .brand .subtitle {
                 display: none;
             }
+            .sidebar.collapsed {
+                width: 0;
+                min-width: 0;
+                padding: 0;
+                opacity: 0;
+            }
+            .sidebar:not(.collapsed) + .sidebar-toggle {
+                left: 60px;
+            }
+            .sidebar-toggle .toggle-icon {
+                font-size: 9px;
+            }
         }
 
         @media (max-width: 600px) {
@@ -2363,6 +2442,12 @@
             }
             .storewise-filter-area .filter-group {
                 min-width: unset;
+            }
+            .sidebar:not(.collapsed) + .sidebar-toggle {
+                left: 48px;
+            }
+            .sidebar-toggle .toggle-icon {
+                font-size: 8px;
             }
         }
 
@@ -2495,7 +2580,7 @@
         </div>
 
         <!-- BODY: SIDEBAR + CONTENT -->
-        <div class="dash-body">
+        <div class="dash-body" id="dashBody">
             <!-- SIDEBAR -->
             <nav class="sidebar" id="sidebar">
                 <div class="nav-section">
@@ -2550,6 +2635,11 @@
                     <!-- Sales folder will be injected by JS -->
                 </div>
             </nav>
+
+            <!-- SIDEBAR TOGGLE BUTTON -->
+            <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()" title="Toggle Navigation">
+                <span class="toggle-icon">◀ NAV</span>
+            </button>
 
             <!-- CONTENT AREA -->
             <div class="content-area" id="contentArea">
@@ -3293,6 +3383,58 @@
 </div>
 
 <script>
+// ===== SIDEBAR TOGGLE FUNCTION =====
+let sidebarCollapsed = false;
+
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const toggleBtn = document.getElementById('sidebarToggle');
+    const icon = toggleBtn.querySelector('.toggle-icon');
+    
+    sidebarCollapsed = !sidebarCollapsed;
+    
+    if (sidebarCollapsed) {
+        sidebar.classList.add('collapsed');
+        icon.textContent = '▶ NAV';
+        toggleBtn.style.left = '0';
+        toggleBtn.style.borderRadius = '0 8px 8px 0';
+        localStorage.setItem('dunkin_sidebar_collapsed', 'true');
+    } else {
+        sidebar.classList.remove('collapsed');
+        icon.textContent = '◀ NAV';
+        toggleBtn.style.left = '220px';
+        toggleBtn.style.borderRadius = '0 8px 8px 0';
+        localStorage.setItem('dunkin_sidebar_collapsed', 'false');
+    }
+    
+    // Trigger resize event for charts
+    setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+    }, 400);
+}
+
+// Load sidebar state from localStorage
+function loadSidebarState() {
+    const savedState = localStorage.getItem('dunkin_sidebar_collapsed');
+    const sidebar = document.getElementById('sidebar');
+    const toggleBtn = document.getElementById('sidebarToggle');
+    const icon = toggleBtn.querySelector('.toggle-icon');
+    
+    if (savedState === 'true') {
+        sidebarCollapsed = true;
+        sidebar.classList.add('collapsed');
+        icon.textContent = '▶ NAV';
+        toggleBtn.style.left = '0';
+        toggleBtn.style.borderRadius = '0 8px 8px 0';
+    } else {
+        sidebarCollapsed = false;
+        sidebar.classList.remove('collapsed');
+        icon.textContent = '◀ NAV';
+        toggleBtn.style.left = '220px';
+        toggleBtn.style.borderRadius = '0 8px 8px 0';
+    }
+}
+
 // ===== COMPLETE JAVASCRIPT WITH NAVIGATION FIX =====
 (function() {
     'use strict';
@@ -3608,6 +3750,9 @@
         dashboardView.style.display = 'flex';
         dashboardView.classList.add('active');
         userRoleBadge.innerText = user.username;
+        
+        // Load sidebar state after dashboard is shown
+        setTimeout(loadSidebarState, 100);
         
         const hasData = loadDataFromLocalStorage();
         if (hasData && mainData.length > 0) {
@@ -10411,6 +10556,11 @@
     initSalesModule();
 
 })();
+
+// Load sidebar state on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadSidebarState();
+});
 </script>
 </body>
 </html>
