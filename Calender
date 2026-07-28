@@ -1,0 +1,2096 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Store Visit Calendar Planner</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; padding: 20px; color: #1e293b; }
+        .app-container { max-width: 1900px; margin: 0 auto; }
+        .app-header {
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            color: #f8fafc;
+            padding: 20px 30px;
+            border-radius: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .app-header h1 { font-size: 22px; font-weight: 600; letter-spacing: 0.3px; }
+        .header-controls { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+        .header-controls label { font-size: 14px; font-weight: 500; color: #cbd5e1; }
+        .header-controls select, .header-controls input {
+            padding: 6px 12px; border-radius: 8px; border: none; background: #334155;
+            color: #f1f5f9; font-size: 14px; outline: none;
+        }
+        .header-controls select option { background: #1e293b; }
+        .btn {
+            padding: 8px 18px; border: none; border-radius: 8px; font-weight: 600;
+            font-size: 13px; cursor: pointer; transition: 0.2s;
+        }
+        .btn-primary { background: #3b82f6; color: #fff; }
+        .btn-primary:hover { background: #2563eb; }
+        .btn-success { background: #22c55e; color: #fff; }
+        .btn-success:hover { background: #16a34a; }
+        .btn-danger { background: #ef4444; color: #fff; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-outline-danger { background: transparent; color: #ef4444; border: 2px solid #ef4444; }
+        .btn-outline-danger:hover { background: #ef4444; color: #fff; }
+        .btn-sm { padding: 4px 12px; font-size: 12px; }
+        .btn-warning { background: #f59e0b; color: #fff; }
+        .btn-warning:hover { background: #d97706; }
+        .btn-excel { background: #1d6f42; color: #fff; }
+        .btn-excel:hover { background: #145a34; }
+
+        .tabs {
+            display: flex; gap: 4px; background: #e2e8f0; padding: 4px;
+            border-radius: 12px; margin-bottom: 20px; flex-wrap: wrap;
+        }
+        .tab {
+            padding: 10px 24px; border-radius: 10px; border: none; background: transparent;
+            font-weight: 600; font-size: 14px; cursor: pointer; transition: 0.2s; color: #475569;
+        }
+        .tab.active { background: #fff; color: #0f172a; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .tab:hover:not(.active) { background: #cbd5e1; }
+
+        .panel {
+            display: none; background: #fff; border-radius: 16px; padding: 20px 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05); overflow-x: auto;
+        }
+        .panel.active { display: block; }
+        .panel-title {
+            font-size: 18px; font-weight: 600; margin-bottom: 16px;
+            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+        }
+        .panel-title small { font-weight: 400; font-size: 14px; color: #64748b; }
+
+        .table-wrap { overflow-x: auto; margin-top: 8px; }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            font-size: 13px; 
+            table-layout: auto;
+        }
+        th {
+            background: #1e293b;
+            color: #f8fafc;
+            font-weight: 600;
+            padding: 10px 8px;
+            text-align: center;
+            border-bottom: 2px solid #334155;
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            font-size: 11px;
+        }
+        td { 
+            padding: 8px 6px; 
+            border-bottom: 1px solid #eef2f6; 
+            vertical-align: middle;
+            text-align: center;
+            font-size: 12px;
+        }
+        tr:hover td { background: #f8fafc; }
+
+        .editable {
+            background: #fff; border: 1px solid #e2e8f0; border-radius: 4px;
+            padding: 4px 6px; font-size: 12px; width: 100%; transition: 0.15s;
+        }
+        .editable:focus { border-color: #3b82f6; outline: none; box-shadow: 0 0 0 3px rgba(59,130,246,0.2); }
+        .editable-sm { min-width: 50px; width: 65px; }
+        .editable-md { min-width: 80px; }
+
+        .badge-status {
+            display: inline-block; padding: 3px 12px; border-radius: 40px;
+            font-size: 11px; font-weight: 600; white-space: nowrap;
+        }
+        .badge-working { background: #dcfce7; color: #166534; }
+        .badge-off { background: #fee2e2; color: #991b1b; }
+        .badge-inventory { background: #fef3c7; color: #92400e; }
+        .badge-ror { background: #dbeafe; color: #1e40af; }
+        .badge-primary { background: #e0f2fe; color: #0369a1; }
+        .badge-secondary { background: #fae8ff; color: #7e22ce; }
+        .badge-completed { background: #dcfce7; color: #166534; }
+        .badge-pending { background: #fef3c7; color: #92400e; }
+
+        .validation-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 12px; margin-top: 12px;
+        }
+        .val-card {
+            background: #f8fafc; border-radius: 10px; padding: 12px 14px;
+            border-left: 4px solid #3b82f6;
+        }
+        .val-card .label { font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+        .val-card .value { font-size: 18px; font-weight: 700; margin-top: 2px; }
+        .val-card.ok { border-left-color: #22c55e; }
+        .val-card.warn { border-left-color: #f59e0b; }
+        .val-card.err { border-left-color: #ef4444; }
+
+        .completion-bar {
+            width: 100%; height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; margin-top: 2px;
+        }
+        .completion-bar .fill { height: 100%; background: #22c55e; border-radius: 3px; transition: width 0.3s; }
+        .completion-bar .fill.warning { background: #f59e0b; }
+        .completion-bar .fill.danger { background: #ef4444; }
+
+        .scrollable-table { max-height: 650px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; }
+
+        .config-settings-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px; background: #f8fafc; padding: 14px; border-radius: 12px;
+        }
+        .config-settings-grid .field { display: flex; flex-direction: column; gap: 3px; }
+        .config-settings-grid .field label {
+            font-size: 11px; color: #64748b; font-weight: 500; text-transform: uppercase; letter-spacing: 0.3px;
+        }
+        .config-settings-grid .field input, .config-settings-grid .field select {
+            padding: 5px 8px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px; background: #fff;
+        }
+        .config-settings-grid .field select:focus, .config-settings-grid .field input:focus {
+            border-color: #3b82f6; outline: none; box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+        }
+
+        .off-day-info {
+            background: #f1f5f9; border-radius: 8px; padding: 8px 14px; margin-top: 10px;
+            font-size: 12px; color: #475569; display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+        }
+        .off-day-info .label { font-weight: 600; color: #1e293b; }
+        .off-day-info .week-badge {
+            display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 600;
+        }
+        .off-day-info .week-badge.off { background: #fee2e2; color: #991b1b; }
+        .off-day-info .week-badge.working { background: #dcfce7; color: #166534; }
+
+        .checkbox-cell { text-align: center; }
+        .checkbox-cell input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: #3b82f6; }
+
+        .notes-container {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+            min-width: 120px;
+        }
+        .notes-display {
+            padding: 4px 8px;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            background: #fff;
+            cursor: pointer;
+            min-height: 30px;
+            font-size: 11px;
+            color: #1e293b;
+            text-align: left;
+            width: 100%;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 3px;
+        }
+        .notes-display:hover {
+            border-color: #94a3b8;
+        }
+        .notes-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #fff;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 100;
+            max-height: 250px;
+            overflow-y: auto;
+            padding: 6px 0;
+            margin-top: 2px;
+        }
+        .notes-dropdown.show {
+            display: block;
+        }
+        .notes-dropdown label {
+            display: flex;
+            align-items: center;
+            padding: 4px 10px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        .notes-dropdown label:hover {
+            background: #f1f5f9;
+        }
+        .notes-dropdown input[type="checkbox"] {
+            margin-right: 8px;
+            width: 14px;
+            height: 14px;
+            accent-color: #3b82f6;
+        }
+        .notes-dropdown .custom-note-input {
+            padding: 4px 10px;
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            border-top: 1px solid #e2e8f0;
+            margin-top: 4px;
+            padding-top: 6px;
+        }
+        .notes-dropdown .custom-note-input input {
+            flex: 1;
+            padding: 3px 6px;
+            border: 1px solid #e2e8f0;
+            border-radius: 3px;
+            font-size: 11px;
+            outline: none;
+        }
+        .notes-dropdown .custom-note-input input:focus {
+            border-color: #3b82f6;
+        }
+        .notes-dropdown .custom-note-input button {
+            padding: 2px 10px;
+            border: none;
+            background: #3b82f6;
+            color: #fff;
+            border-radius: 3px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+        .notes-dropdown .custom-note-input button:hover {
+            background: #2563eb;
+        }
+        .note-tag {
+            display: inline-block;
+            background: #e2e8f0;
+            padding: 1px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            color: #1e293b;
+            white-space: nowrap;
+        }
+        .note-tag.custom {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .note-placeholder {
+            color: #94a3b8;
+            font-size: 11px;
+        }
+
+        .store-select {
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            padding: 3px 5px;
+            font-size: 11px;
+            background: #fff;
+            width: 100%;
+            min-width: 70px;
+        }
+        .store-select:focus {
+            border-color: #3b82f6;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(59,130,246,0.1);
+        }
+        .task-select {
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            padding: 3px 5px;
+            font-size: 11px;
+            background: #fff;
+            width: 100%;
+            min-width: 80px;
+        }
+        .task-select:focus {
+            border-color: #3b82f6;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(59,130,246,0.1);
+        }
+
+        .calendar-table th, .calendar-table td {
+            padding: 8px 6px;
+            white-space: nowrap;
+        }
+        .calendar-table .date-cell { min-width: 85px; }
+        .calendar-table .day-cell { min-width: 60px; }
+        .calendar-table .shift-cell { min-width: 60px; }
+        .calendar-table .timing-cell { min-width: 70px; }
+        .calendar-table .store-cell { min-width: 75px; }
+        .calendar-table .task-cell { min-width: 85px; }
+        .calendar-table .check-cell { min-width: 35px; }
+        .calendar-table .notes-cell { min-width: 120px; max-width: 220px; }
+
+        .day-off-merged {
+            background: #fee2e2;
+            font-weight: 700;
+            font-size: 16px;
+            color: #991b1b;
+            text-align: center;
+            vertical-align: middle;
+            padding: 20px 10px;
+        }
+
+        .edit-indicator {
+            font-size: 8px;
+            color: #f59e0b;
+            margin-left: 2px;
+        }
+
+        @media (max-width: 700px) {
+            .app-header { flex-direction: column; align-items: stretch; text-align: center; }
+            .header-controls { justify-content: center; }
+            .panel { padding: 14px; }
+            table { font-size: 11px; }
+            th, td { padding: 6px 4px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container" id="app">
+
+    <header class="app-header">
+        <div>
+            <h1>📋 Store Visit Calendar Planner</h1>
+            <div style="font-size:13px;color:#94a3b8;margin-top:4px;">
+                Shift-based scheduling · Editable · Manual completion tracking
+            </div>
+        </div>
+        <div class="header-controls">
+            <label>Month <select id="monthSelect"></select></label>
+            <label>Year <input type="number" id="yearInput" value="2026" style="width:70px;" /></label>
+            <button class="btn btn-primary" onclick="regenerate()">⟳ Generate</button>
+            <button class="btn btn-success" onclick="saveData()">💾 Save</button>
+            <button class="btn btn-warning" onclick="downloadPDF()">📄 PDF</button>
+            <button class="btn btn-excel" onclick="exportExcel()">📊 Excel</button>
+            <button class="btn btn-danger" onclick="resetData()">↺ Reset</button>
+        </div>
+    </header>
+
+    <div class="tabs">
+        <button class="tab active" data-tab="config">⚙️ Config</button>
+        <button class="tab" data-tab="calendar">📅 Calendar</button>
+        <button class="tab" data-tab="validation">✅ Validation</button>
+        <button class="tab" data-tab="completion">📊 Completion</button>
+    </div>
+
+    <!-- CONFIG -->
+    <div class="panel active" id="panel-config">
+        <div class="panel-title">Configuration <small>Edit and click Generate</small></div>
+
+        <h3 style="margin:14px 0 6px;font-size:14px;">🏪 Stores</h3>
+        <div style="margin-bottom:6px;">
+            <button class="btn btn-primary btn-sm" onclick="addStore()">+ Add Store</button>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Code</th><th>Open</th><th>Close</th><th>Closed Days</th><th>Single Shift</th><th style="width:50px;">Action</th></tr></thead>
+                <tbody id="configStoreBody"></tbody>
+            </table>
+        </div>
+
+        <h3 style="margin:16px 0 6px;font-size:14px;">⏰ Shifts (Timing defined here)</h3>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Shift</th><th>Stores 1-2 Start</th><th>Stores 1-2 End</th><th>Stores 3-4 Start</th><th>Stores 3-4 End</th><th>Type</th></tr></thead>
+                <tbody id="configShiftBody"></tbody>
+            </table>
+        </div>
+
+        <h3 style="margin:16px 0 6px;font-size:14px;">📐 Settings</h3>
+        <div class="config-settings-grid">
+            <div class="field">
+                <label>Visits per Day</label>
+                <input type="number" id="visitsPerDay" value="4" />
+            </div>
+            <div class="field">
+                <label>ROR must finish by day</label>
+                <input type="number" id="rorFinishDay" value="15" />
+            </div>
+            <div class="field">
+                <label>ROR per Day (max)</label>
+                <input type="number" id="rorPerDay" value="2" />
+                <div style="font-size:9px;color:#64748b;">Maximum 2 RORs per day</div>
+            </div>
+            <div class="field">
+                <label>Starting Off-Day</label>
+                <select id="offDayStart">
+                    <option value="Friday">Friday</option>
+                    <option value="Saturday" selected>Saturday</option>
+                </select>
+                <div style="font-size:9px;color:#64748b;">Week 1 = selected · Week 2 = alternate</div>
+            </div>
+            <div class="field">
+                <label>Morning Peak</label>
+                <input type="time" id="morningPeak" value="07:00" />
+            </div>
+            <div class="field">
+                <label>Evening Peak</label>
+                <input type="time" id="eveningPeak" value="18:00" />
+            </div>
+        </div>
+
+        <div class="off-day-info">
+            <span class="label">📅 Off-Day Pattern:</span>
+            <span id="offDayPattern">Loading...</span>
+        </div>
+
+        <div style="margin-top:10px;">
+            <button class="btn btn-primary" onclick="regenerate()">⟳ Generate Calendar</button>
+        </div>
+    </div>
+
+    <!-- CALENDAR -->
+    <div class="panel" id="panel-calendar">
+        <div class="panel-title">
+            📅 Calendar Plan <small>💡 Click on any cell to edit</small>
+            <small id="calendarLabel">August 2026</small>
+        </div>
+        <div class="scrollable-table">
+            <table class="calendar-table" id="calendarTable">
+                <thead><tr>
+                    <th class="date-cell">Date</th>
+                    <th class="day-cell">Day</th>
+                    <th class="shift-cell">Shift</th>
+                    <th class="timing-cell">Timing</th>
+                    <th class="store-cell">Store 1</th>
+                    <th class="task-cell">Task 1</th>
+                    <th class="check-cell">✅</th>
+                    <th class="store-cell">Store 2</th>
+                    <th class="task-cell">Task 2</th>
+                    <th class="check-cell">✅</th>
+                    <th class="store-cell">Store 3</th>
+                    <th class="task-cell">Task 3</th>
+                    <th class="check-cell">✅</th>
+                    <th class="store-cell">Store 4</th>
+                    <th class="task-cell">Task 4</th>
+                    <th class="check-cell">✅</th>
+                    <th class="notes-cell">Notes</th>
+                </tr></thead>
+                <tbody id="calendarBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- VALIDATION -->
+    <div class="panel" id="panel-validation">
+        <div class="panel-title">
+            ✅ Validation & Coverage
+            <small>📝 Manual changes are tracked here</small>
+        </div>
+        <div class="validation-grid" id="validationSummary"></div>
+        <h3 style="margin:16px 0 8px;font-size:14px;">📊 Per-Store Coverage</h3>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Store</th><th>ROR</th><th>Primary</th><th>Secondary</th><th>Total</th><th>ROR Date</th><th>Status</th><th>Edited</th></tr></thead>
+                <tbody id="validationBody"></tbody>
+            </table>
+        </div>
+        <h3 style="margin:16px 0 8px;font-size:14px;">📝 Manual Edits Log</h3>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Date</th><th>Store</th><th>Field</th><th>Old Value</th><th>New Value</th></tr></thead>
+                <tbody id="editsLogBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- COMPLETION -->
+    <div class="panel" id="panel-completion">
+        <div class="panel-title">
+            📊 Task Completion Status
+            <small>✅ Check tasks in Calendar to mark complete</small>
+        </div>
+        <div class="validation-grid" id="completionSummary"></div>
+        <h3 style="margin:16px 0 8px;font-size:14px;">📋 Per-Store Completion</h3>
+        <div class="table-wrap">
+            <table>
+                <thead><tr>
+                    <th>Store</th>
+                    <th>Assigned</th><th>Completed</th>
+                    <th>Completion %</th><th>Status</th>
+                </tr></thead>
+                <tbody id="completionBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// DATA MODEL
+// ============================================================
+
+const DEFAULT_DATA = {
+    stores: [
+        { code: 10126, open: '00:00', close: '23:59', closedDays: [], singleShift: false },
+        { code: 10148, open: '00:00', close: '23:59', closedDays: [], singleShift: false },
+        { code: 10222, open: '00:00', close: '23:59', closedDays: [], singleShift: false },
+        { code: 10263, open: '00:00', close: '23:59', closedDays: [], singleShift: false },
+        { code: 10291, open: '08:00', close: '16:00', closedDays: ['Friday', 'Saturday'], singleShift: true },
+        { code: 10300, open: '00:00', close: '23:59', closedDays: [], singleShift: false },
+        { code: 10396, open: '00:00', close: '23:59', closedDays: [], singleShift: false },
+        { code: 10413, open: '00:00', close: '23:59', closedDays: [], singleShift: false },
+        { code: 10423, open: '00:00', close: '23:59', closedDays: [], singleShift: false },
+        { code: 10434, open: '00:00', close: '23:59', closedDays: [], singleShift: false },
+        { code: 10490, open: '00:00', close: '23:59', closedDays: [], singleShift: false },
+        { code: 10524, open: '00:00', close: '23:59', closedDays: [], singleShift: false }
+    ],
+    shifts: [
+        { shift: 1, s1Start: '06:00', s1End: '11:00', s2Start: '18:00', s2End: '22:00', type: 'Broken' },
+        { shift: 2, s1Start: '07:00', s1End: '12:00', s2Start: '17:00', s2End: '21:00', type: 'Broken' },
+        { shift: 3, s1Start: '07:00', s1End: '12:00', s2Start: '19:00', s2End: '23:00', type: 'Broken' },
+        { shift: 4, s1Start: '10:00', s1End: '19:00', s2Start: '10:00', s2End: '19:00', type: 'Straight' }
+    ],
+    settings: {
+        visitsPerDay: 4,
+        rorFinishDay: 15,
+        rorPerDay: 2,
+        morningPeak: '07:00',
+        eveningPeak: '18:00',
+        offDayStart: 'Saturday'
+    },
+    calendar: [],
+    completedTasks: {},
+    notes: {},
+    editedCells: {},
+    editLog: []
+};
+
+const NOTE_OPTIONS = [
+    'Admin task',
+    'Time sheet',
+    'ROR',
+    'Weekly analysis',
+    'Business meet',
+    'Overtime',
+    'Training day',
+    'Cleaning day',
+    'Weekend sales drive'
+];
+
+const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+// ============================================================
+// STATE
+// ============================================================
+
+let appData = loadData();
+
+function loadData() {
+    try {
+        const raw = localStorage.getItem('storeVisitPlanner_v8');
+        if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed.stores) {
+                parsed.stores.forEach(s => {
+                    if (!Array.isArray(s.closedDays)) {
+                        if (typeof s.closedDays === 'string' && s.closedDays) {
+                            s.closedDays = s.closedDays.split(',').map(d => d.trim()).filter(d => d);
+                        } else {
+                            s.closedDays = [];
+                        }
+                    }
+                });
+            }
+            return deepMerge(DEFAULT_DATA, parsed);
+        }
+    } catch (e) { console.warn('Load error', e); }
+    return JSON.parse(JSON.stringify(DEFAULT_DATA));
+}
+
+function deepMerge(target, source) {
+    const result = JSON.parse(JSON.stringify(target));
+    for (const key in source) {
+        if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+            if (result[key] !== undefined) {
+                result[key] = deepMerge(result[key], source[key]);
+            } else {
+                result[key] = source[key];
+            }
+        } else {
+            result[key] = source[key];
+        }
+    }
+    return result;
+}
+
+function saveData() {
+    try {
+        localStorage.setItem('storeVisitPlanner_v8', JSON.stringify(appData));
+        showToast('✅ Data saved!', 'success');
+    } catch (e) {
+        showToast('❌ Save failed: ' + e.message, 'error');
+    }
+}
+
+function resetData() {
+    if (!confirm('Reset all data?')) return;
+    appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+    appData.calendar = [];
+    appData.completedTasks = {};
+    appData.notes = {};
+    appData.editedCells = {};
+    appData.editLog = [];
+    saveData();
+    renderAll();
+    showToast('↺ Reset complete', 'success');
+}
+
+// ============================================================
+// STORE MANAGEMENT
+// ============================================================
+
+function addStore() {
+    const maxCode = appData.stores.reduce((max, s) => Math.max(max, s.code), 10000);
+    appData.stores.push({
+        code: maxCode + 1,
+        open: '00:00',
+        close: '23:59',
+        closedDays: [],
+        singleShift: false
+    });
+    renderConfigStores();
+    showToast('➕ Store added! Click Generate to update.', 'success');
+}
+
+function removeStore(index) {
+    if (appData.stores.length <= 1) {
+        showToast('❌ Cannot remove last store!', 'error');
+        return;
+    }
+    if (!confirm('Remove this store?')) return;
+    appData.stores.splice(index, 1);
+    renderConfigStores();
+    showToast('🗑️ Store removed.', 'success');
+}
+
+// ============================================================
+// RENDER ENGINE
+// ============================================================
+
+function renderAll() {
+    renderConfigStores();
+    renderConfigShifts();
+    renderOffDayInfo();
+    renderCalendar();
+    renderValidation();
+    renderCompletion();
+    renderEditsLog();
+    updateMonthYearUI();
+    syncSettingsUI();
+}
+
+function syncSettingsUI() {
+    const fields = ['offDayStart', 'rorPerDay', 'visitsPerDay', 'rorFinishDay', 'morningPeak', 'eveningPeak'];
+    fields.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && appData.settings[id] !== undefined) {
+            el.value = appData.settings[id];
+        }
+    });
+}
+
+function renderConfigStores() {
+    const tbody = document.getElementById('configStoreBody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = appData.stores.map((s, i) => `
+        <tr>
+            <td><input class="editable editable-sm" value="${s.code}" data-store="${i}" data-field="code" /></td>
+            <td><input class="editable editable-sm" value="${s.open}" data-store="${i}" data-field="open" /></td>
+            <td><input class="editable editable-sm" value="${s.close}" data-store="${i}" data-field="close" /></td>
+            <td>
+                <select class="editable editable-md" data-store="${i}" data-field="closedDays" multiple style="height:auto;min-height:60px;">
+                    ${WEEKDAYS.map(day => 
+                        `<option value="${day}" ${(s.closedDays || []).includes(day) ? 'selected' : ''}>${day}</option>`
+                    ).join('')}
+                </select>
+                <div style="font-size:9px;color:#64748b;margin-top:2px;">Hold Ctrl/Cmd to select multiple</div>
+            </td>
+            <td><input type="checkbox" ${s.singleShift ? 'checked' : ''} data-store="${i}" data-field="singleShift" onchange="updateSingleShift(${i}, this.checked)" /></td>
+            <td><button class="btn btn-outline-danger btn-sm" onclick="removeStore(${i})">✕</button></td>
+        </tr>
+    `).join('');
+
+    document.querySelectorAll('#configStoreBody .editable').forEach(el => {
+        el.addEventListener('change', function() {
+            const idx = parseInt(this.dataset.store);
+            const field = this.dataset.field;
+            let val = this.value;
+            if (field === 'code') val = parseInt(val) || 0;
+            if (field === 'closedDays') {
+                val = Array.from(this.selectedOptions).map(opt => opt.value);
+            }
+            appData.stores[idx][field] = val;
+        });
+    });
+}
+
+function updateSingleShift(index, checked) {
+    appData.stores[index].singleShift = checked;
+    saveData();
+}
+
+function renderConfigShifts() {
+    const tbody = document.getElementById('configShiftBody');
+    if (!tbody) return;
+    tbody.innerHTML = appData.shifts.map((s, i) => `
+        <tr>
+            <td><strong>${s.shift}</strong></td>
+            <td><input class="editable editable-sm" value="${s.s1Start}" data-shift="${i}" data-field="s1Start" /></td>
+            <td><input class="editable editable-sm" value="${s.s1End}" data-shift="${i}" data-field="s1End" /></td>
+            <td><input class="editable editable-sm" value="${s.s2Start}" data-shift="${i}" data-field="s2Start" /></td>
+            <td><input class="editable editable-sm" value="${s.s2End}" data-shift="${i}" data-field="s2End" /></td>
+            <td><input class="editable editable-sm" value="${s.type}" data-shift="${i}" data-field="type" /></td>
+        </tr>
+    `).join('');
+
+    document.querySelectorAll('#configShiftBody .editable').forEach(el => {
+        el.addEventListener('change', function() {
+            const idx = parseInt(this.dataset.shift);
+            const field = this.dataset.field;
+            appData.shifts[idx][field] = this.value;
+        });
+    });
+}
+
+function renderOffDayInfo() {
+    const container = document.getElementById('offDayPattern');
+    if (!container) return;
+
+    const offDayStart = document.getElementById('offDayStart')?.value || appData.settings.offDayStart || 'Saturday';
+    const month = parseInt(document.getElementById('monthSelect')?.value) || 8;
+    const year = parseInt(document.getElementById('yearInput')?.value) || 2026;
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const startDate = new Date(year, month - 1, 1);
+
+    const weekInfo = {};
+    for (let d = 1; d <= daysInMonth; d++) {
+        const dateObj = new Date(year, month - 1, d);
+        const dayName = dateObj.toLocaleString('default', { weekday: 'long' });
+        const weekNum = Math.ceil((d + startDate.getDay()) / 7);
+        const offDay = (weekNum % 2 === 1) ? offDayStart : (offDayStart === 'Friday' ? 'Saturday' : 'Friday');
+        const isOff = (dayName === offDay);
+        if (!weekInfo[weekNum]) weekInfo[weekNum] = { offDay, hasOff: false };
+        if (isOff) weekInfo[weekNum].hasOff = true;
+    }
+
+    let html = '';
+    for (let w = 1; w <= Object.keys(weekInfo).length; w++) {
+        const info = weekInfo[w];
+        if (info) {
+            const cls = info.hasOff ? 'off' : 'working';
+            const label = info.hasOff ? `🔴 Week ${w}: ${info.offDay} OFF` : `✅ Week ${w}: No off-day`;
+            html += `<span class="week-badge ${cls}">${label}</span>`;
+        }
+    }
+    container.innerHTML = html;
+}
+
+// ============================================================
+// CALENDAR GENERATOR
+// ============================================================
+
+function generateCalendar() {
+    const settings = appData.settings;
+    const offDayStart = document.getElementById('offDayStart');
+    if (offDayStart) settings.offDayStart = offDayStart.value;
+
+    ['rorPerDay', 'visitsPerDay', 'rorFinishDay'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) settings[id] = parseInt(el.value) || 2;
+    });
+
+    ['morningPeak', 'eveningPeak'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) settings[id] = el.value || '07:00';
+    });
+
+    const month = parseInt(document.getElementById('monthSelect').value) || 8;
+    const year = parseInt(document.getElementById('yearInput').value) || 2026;
+    const stores = appData.stores;
+    const shifts = appData.shifts;
+
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const startDate = new Date(year, month - 1, 1);
+
+    const counts = {};
+    stores.forEach(s => {
+        counts[s.code] = { 
+            primary: 0, secondary: 0, 
+            rorDone: false, rorDate: null,
+            inventoryDone: false,
+            totalVisits: 0
+        };
+    });
+
+    const straightCountPerWeek = {};
+    let rorQueue = stores.map(s => s.code);
+    let workDayCounter = 0;
+    const calendar = [];
+
+    const firstDate = new Date(year, month - 1, 1);
+    const firstDayName = firstDate.toLocaleString('default', { weekday: 'long' });
+    const firstWeekNum = Math.ceil((1 + startDate.getDay()) / 7);
+    const firstOffDay = (firstWeekNum % 2 === 1) ? settings.offDayStart : (settings.offDayStart === 'Friday' ? 'Saturday' : 'Friday');
+    const isFirstOff = (firstDayName === firstOffDay);
+
+    const rorAssigned = {};
+
+    for (let d = 1; d <= daysInMonth; d++) {
+        const dateObj = new Date(year, month - 1, d);
+        const dayName = dateObj.toLocaleString('default', { weekday: 'long' });
+        const weekNum = Math.ceil((d + startDate.getDay()) / 7);
+
+        const offDay = (weekNum % 2 === 1) ? settings.offDayStart : (settings.offDayStart === 'Friday' ? 'Saturday' : 'Friday');
+        const isOff = (dayName === offDay);
+
+        let shiftNum = ((d - 1) % 4) + 1;
+        let shift = shifts.find(s => s.shift === shiftNum) || shifts[0];
+
+        if (shiftNum === 4) {
+            const allowedDays = ['Monday', 'Tuesday', 'Wednesday', 'Sunday'];
+            if (!allowedDays.includes(dayName)) {
+                shiftNum = 1;
+                shift = shifts.find(s => s.shift === 1) || shifts[0];
+            } else {
+                if (!straightCountPerWeek[weekNum]) straightCountPerWeek[weekNum] = 0;
+                if (straightCountPerWeek[weekNum] >= 2) {
+                    shiftNum = 1;
+                    shift = shifts.find(s => s.shift === 1) || shifts[0];
+                } else {
+                    straightCountPerWeek[weekNum]++;
+                }
+            }
+        }
+
+        let rorToday = 0;
+        const isStraight = shiftNum === 4;
+
+        const totalStores = stores.length;
+        const startIdx = ((d - 1) * 2) % totalStores;
+        const storeSlots = [];
+        for (let i = 0; i < 4; i++) {
+            const idx = (startIdx + i) % totalStores;
+            storeSlots.push(stores[idx]);
+        }
+
+        if (isOff) {
+            calendar.push({
+                date: formatDate(dateObj),
+                day: dayName,
+                isOff: true,
+                shiftNum: shiftNum,
+                shiftType: '—',
+                tasks: [null, null, null, null],
+                notes: [],
+                week: weekNum,
+                workDay: 0,
+                shift: shift
+            });
+            continue;
+        }
+
+        let tasks = storeSlots.map((store, idx) => {
+            if (!store) return null;
+            const code = store.code;
+            
+            const closedDays = store.closedDays || [];
+            if (closedDays.includes(dayName)) return null;
+            
+            const isMorningSlot = idx < 2;
+            const timeStart = isMorningSlot ? shift.s1Start : shift.s2Start;
+            const timeEnd = isMorningSlot ? shift.s1End : shift.s2End;
+            
+            if (store.singleShift && !isMorningSlot) return null;
+            
+            if (!isStoreOpenAtTime(store, timeStart)) return null;
+
+            let task = '';
+            let isROR = false;
+
+            if (d === 1 && !isFirstOff && !counts[code].inventoryDone) {
+                task = 'Monthly Inventory';
+                counts[code].inventoryDone = true;
+                counts[code].totalVisits++;
+                return {
+                    storeCode: code,
+                    task: task,
+                    isROR: false,
+                    slotIdx: idx,
+                    timeStart: timeStart,
+                    timeEnd: timeEnd,
+                    duration: '8 hrs'
+                };
+            }
+
+            if (!task && !counts[code].rorDone && rorToday < settings.rorPerDay) {
+                if (rorQueue.includes(code) && !rorAssigned[code]) {
+                    task = 'ROR';
+                    isROR = true;
+                    counts[code].rorDone = true;
+                    counts[code].rorDate = formatDate(dateObj);
+                    rorToday++;
+                    rorQueue = rorQueue.filter(c => c !== code);
+                    rorAssigned[code] = true;
+                    counts[code].totalVisits++;
+                    return {
+                        storeCode: code,
+                        task: task,
+                        isROR: true,
+                        slotIdx: idx,
+                        timeStart: timeStart,
+                        timeEnd: timeEnd,
+                        duration: '2 hrs'
+                    };
+                }
+            }
+
+            if (!task) {
+                const c = counts[code];
+                const p = c.primary || 0;
+                const s = c.secondary || 0;
+
+                let chosen = '';
+                if (!isStraight) {
+                    if (idx % 2 === 0) {
+                        chosen = p <= s ? 'Primary visit' : 'Secondary visit';
+                    } else {
+                        chosen = s <= p ? 'Secondary visit' : 'Primary visit';
+                    }
+                } else {
+                    chosen = p <= s ? 'Primary visit' : 'Secondary visit';
+                }
+
+                task = chosen;
+
+                if (task === 'Primary visit') counts[code].primary++;
+                else if (task === 'Secondary visit') counts[code].secondary++;
+                counts[code].totalVisits++;
+            }
+
+            if (!task) return null;
+
+            let duration = '1 hr';
+            if (task === 'Primary visit') duration = '3 hrs';
+            else if (task === 'Secondary visit') duration = '1 hr';
+            else if (task === 'ROR') duration = '2 hrs';
+            else if (task === 'Monthly Inventory') duration = '8 hrs';
+
+            return {
+                storeCode: code,
+                task: task,
+                isROR: isROR,
+                slotIdx: idx,
+                timeStart: timeStart,
+                timeEnd: timeEnd,
+                duration: duration
+            };
+        }).filter(t => t !== null);
+
+        const morningTasks = tasks.filter(t => t.slotIdx < 2);
+        const eveningTasks = tasks.filter(t => t.slotIdx >= 2);
+
+        if (morningTasks.some(t => t.isROR)) {
+            morningTasks.forEach(t => {
+                if (!t.isROR && t.task === 'Primary visit') {
+                    counts[t.storeCode].primary--;
+                    t.task = 'Secondary visit';
+                    t.duration = '1 hr';
+                    counts[t.storeCode].secondary++;
+                }
+            });
+        }
+
+        if (eveningTasks.some(t => t.isROR)) {
+            eveningTasks.forEach(t => {
+                if (!t.isROR && t.task === 'Primary visit') {
+                    counts[t.storeCode].primary--;
+                    t.task = 'Secondary visit';
+                    t.duration = '1 hr';
+                    counts[t.storeCode].secondary++;
+                }
+            });
+        }
+
+        let finalTasks = [...morningTasks, ...eveningTasks];
+
+        while (finalTasks.length < 4) {
+            const available = stores.filter(s => {
+                if (finalTasks.some(t => t && t.storeCode === s.code)) return false;
+                const closedDays = s.closedDays || [];
+                if (closedDays.includes(dayName)) return false;
+                const timeCheck = finalTasks.length < 2 ? shift.s1Start : shift.s2Start;
+                if (s.singleShift && finalTasks.length >= 2) return false;
+                if (!isStoreOpenAtTime(s, timeCheck)) return false;
+                return true;
+            });
+            if (available.length === 0) break;
+            
+            const store = available.reduce((a, b) => {
+                return (counts[a.code]?.totalVisits || 0) < (counts[b.code]?.totalVisits || 0) ? a : b;
+            }, available[0]);
+            
+            const c = counts[store.code] || { primary: 0, secondary: 0 };
+            const p = c.primary || 0;
+            const s = c.secondary || 0;
+            
+            let task = p <= s ? 'Primary visit' : 'Secondary visit';
+            
+            if (task === 'Primary visit') c.primary++;
+            else c.secondary++;
+            
+            counts[store.code] = c;
+            counts[store.code].totalVisits = (counts[store.code].totalVisits || 0) + 1;
+            
+            const isMorningSlot = finalTasks.length < 2;
+            const timeStart = isMorningSlot ? shift.s1Start : shift.s2Start;
+            const timeEnd = isMorningSlot ? shift.s1End : shift.s2End;
+            
+            let duration = task === 'Primary visit' ? '3 hrs' : '1 hr';
+            
+            finalTasks.push({
+                storeCode: store.code,
+                task: task,
+                isROR: false,
+                slotIdx: finalTasks.length,
+                timeStart: timeStart,
+                timeEnd: timeEnd,
+                duration: duration
+            });
+        }
+
+        while (finalTasks.length < 4) {
+            finalTasks.push(null);
+        }
+
+        let notes = [];
+        if (dayName === 'Wednesday') notes.push('Time sheet');
+        if (dayName === 'Wednesday' && weekNum % 2 === 0) notes.push('Area meeting');
+        if (isStraight) notes.push('Straight shift');
+        if (finalTasks.some(t => t && t.isROR)) notes.push('ROR');
+        if (finalTasks.some(t => t && t.task && t.task === 'Monthly Inventory')) notes.push('Inventory day');
+        if (notes.length === 0) notes = [];
+
+        workDayCounter++;
+
+        calendar.push({
+            date: formatDate(dateObj),
+            day: dayName,
+            isOff: false,
+            shiftNum: shiftNum,
+            shiftType: isStraight ? 'Straight' : 'Broken',
+            tasks: finalTasks.map(t => t ? {
+                storeCode: t.storeCode,
+                task: t.task,
+                isROR: t.isROR,
+                timeStart: t.timeStart || (t.slotIdx < 2 ? shift.s1Start : shift.s2Start),
+                timeEnd: t.timeEnd || (t.slotIdx < 2 ? shift.s1End : shift.s2End),
+                duration: t.duration || '1 hr',
+                slotIdx: t.slotIdx
+            } : null),
+            notes: notes,
+            week: weekNum,
+            workDay: workDayCounter,
+            shift: shift
+        });
+    }
+
+    // Force assign remaining RORs
+    if (rorQueue.length > 0) {
+        for (let i = 0; i < calendar.length && rorQueue.length > 0; i++) {
+            const row = calendar[i];
+            if (row.isOff) continue;
+            const dayOfMonth = parseInt(row.date.split('-')[2]);
+            if (dayOfMonth > 15) continue;
+            
+            for (let j = 0; j < row.tasks.length && rorQueue.length > 0; j++) {
+                const task = row.tasks[j];
+                if (!task) continue;
+                const code = task.storeCode;
+                if (rorQueue.includes(code) && !rorAssigned[code]) {
+                    if (task.task === 'Primary visit') counts[code].primary--;
+                    else if (task.task === 'Secondary visit') counts[code].secondary--;
+                    
+                    task.task = 'ROR';
+                    task.isROR = true;
+                    task.duration = '2 hrs';
+                    counts[code].rorDone = true;
+                    counts[code].rorDate = row.date;
+                    rorAssigned[code] = true;
+                    rorQueue = rorQueue.filter(c => c !== code);
+                    if (!row.notes.includes('ROR')) row.notes.push('ROR');
+                }
+            }
+        }
+        
+        if (rorQueue.length > 0) {
+            for (let i = calendar.length - 1; i >= 0 && rorQueue.length > 0; i--) {
+                const row = calendar[i];
+                if (row.isOff) continue;
+                for (let j = 0; j < row.tasks.length && rorQueue.length > 0; j++) {
+                    const task = row.tasks[j];
+                    if (!task) continue;
+                    const code = rorQueue[0];
+                    if (!rorAssigned[code]) {
+                        if (task.task === 'Primary visit') counts[task.storeCode].primary--;
+                        else if (task.task === 'Secondary visit') counts[task.storeCode].secondary--;
+                        
+                        task.storeCode = code;
+                        task.task = 'ROR';
+                        task.isROR = true;
+                        task.duration = '2 hrs';
+                        counts[code].rorDone = true;
+                        counts[code].rorDate = row.date;
+                        rorAssigned[code] = true;
+                        rorQueue = rorQueue.slice(1);
+                        if (!row.notes.includes('ROR')) row.notes.push('ROR');
+                    }
+                }
+            }
+        }
+    }
+
+    appData.calendar = calendar;
+    renderAll();
+    saveData();
+    
+    const monthName = new Date(year, month - 1).toLocaleString('default', { month: 'long' });
+    showToast(`✅ Calendar generated for ${monthName} ${year}`, 'success');
+}
+
+// ============================================================
+// HELPER FUNCTIONS
+// ============================================================
+
+function isStoreOpenAtTime(store, time) {
+    if (!store) return false;
+    if (store.open === '00:00' && store.close === '23:59') return true;
+    const timeMinutes = timeToMinutes(time);
+    const openMinutes = timeToMinutes(store.open);
+    const closeMinutes = timeToMinutes(store.close);
+    return timeMinutes >= openMinutes && timeMinutes <= closeMinutes;
+}
+
+function timeToMinutes(t) {
+    if (!t) return 0;
+    const parts = t.split(':');
+    return parseInt(parts[0]) * 60 + parseInt(parts[1] || 0);
+}
+
+function formatDate(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
+
+// ============================================================
+// CALENDAR RENDER
+// ============================================================
+
+function renderCalendar() {
+    const tbody = document.getElementById('calendarBody');
+    const label = document.getElementById('calendarLabel');
+
+    const month = parseInt(document.getElementById('monthSelect')?.value) || 8;
+    const year = parseInt(document.getElementById('yearInput')?.value) || 2026;
+    const monthName = new Date(year, month - 1).toLocaleString('default', { month: 'long' });
+    if (label) label.textContent = `${monthName} ${year}`;
+
+    if (!tbody) return;
+
+    if (!appData.calendar || appData.calendar.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="17" style="text-align:center;color:#94a3b8;padding:30px;">Click "Generate" to build the calendar</td></tr>`;
+        return;
+    }
+
+    if (!appData.completedTasks) appData.completedTasks = {};
+    if (!appData.notes) appData.notes = {};
+    if (!appData.editedCells) appData.editedCells = {};
+
+    const taskOptions = [
+        'Primary visit',
+        'Secondary visit',
+        'ROR',
+        'Monthly Inventory',
+        '—'
+    ];
+
+    tbody.innerHTML = appData.calendar.map((row, rowIdx) => {
+        const tasks = row.tasks || [];
+        const shiftLabel = row.shiftNum ? `Shift ${row.shiftNum}` : '—';
+
+        const shift = row.shift || appData.shifts.find(s => s.shift === row.shiftNum) || appData.shifts[0];
+        const morningTime = `${shift.s1Start} - ${shift.s1End}`;
+        const eveningTime = `${shift.s2Start} - ${shift.s2End}`;
+        const timingDisplay = row.isOff ? '—' : `🌅 ${morningTime}<br>🌙 ${eveningTime}`;
+
+        if (row.isOff) {
+            return `
+                <tr>
+                    <td style="font-weight:600;white-space:nowrap;padding:10px 6px;">${row.date || ''}</td>
+                    <td style="white-space:nowrap;padding:10px 6px;">${row.day || ''}</td>
+                    <td colspan="15" class="day-off-merged" style="background:#fee2e2;font-weight:700;font-size:16px;color:#991b1b;text-align:center;padding:20px 10px;">
+                        🚫 DAY OFF
+                    </td>
+                </tr>
+            `;
+        }
+
+        let taskCells = '';
+        for (let i = 0; i < 4; i++) {
+            const t = tasks[i] || { 
+                storeCode: '', task: '', 
+                isROR: false, timeStart: '', timeEnd: '', duration: '',
+                slotIdx: i
+            };
+            
+            const taskKey = `${row.date}_${t.storeCode}_${i}`;
+            const isChecked = appData.completedTasks[taskKey] || false;
+            const hasTask = t.task && t.task !== 'Day off' && t.task !== '' && t.task !== '—';
+            const isEdited = appData.editedCells[taskKey] || false;
+            
+            const storeOptions = appData.stores.map(s => 
+                `<option value="${s.code}" ${s.code === t.storeCode ? 'selected' : ''}>${s.code}</option>`
+            ).join('');
+            
+            taskCells += `
+                <td style="padding:6px 4px;">
+                    <select class="store-select" 
+                        onchange="updateStore('${row.date}', ${rowIdx}, ${i}, this.value)">
+                        ${storeOptions}
+                    </select>
+                </td>
+                <td style="padding:6px 4px;">
+                    <select class="task-select" 
+                        onchange="updateTask('${row.date}', ${rowIdx}, ${i}, this.value)">
+                        ${taskOptions.map(opt => 
+                            `<option value="${opt}" ${t.task === opt ? 'selected' : ''}>${opt}</option>`
+                        ).join('')}
+                    </select>
+                    ${isEdited ? '<span class="edit-indicator">✏️</span>' : ''}
+                </td>
+                <td class="checkbox-cell" style="padding:6px 4px;">
+                    ${hasTask ? 
+                        `<input type="checkbox" ${isChecked ? 'checked' : ''} 
+                            onchange="toggleTask('${row.date}', '${t.storeCode}', ${i})" />` 
+                        : '—'}
+                </td>
+            `;
+        }
+
+        const noteKey = `${row.date}_${rowIdx}`;
+        const selectedNotes = appData.notes[noteKey] || row.notes || [];
+
+        return `
+            <tr>
+                <td style="font-weight:600;white-space:nowrap;padding:8px 6px;">${row.date || ''}</td>
+                <td style="white-space:nowrap;padding:8px 6px;">${row.day || ''}</td>
+                <td style="white-space:nowrap;padding:8px 6px;">${shiftLabel}</td>
+                <td style="font-size:10px;color:#475569;white-space:nowrap;padding:8px 6px;text-align:center;line-height:1.5;">
+                    ${timingDisplay}
+                </td>
+                ${taskCells}
+                <td style="padding:6px 4px;min-width:120px;max-width:220px;">
+                    <div class="notes-container">
+                        <div class="notes-display" onclick="toggleNotesDropdown('${row.date}', ${rowIdx})">
+                            ${selectedNotes.length > 0 ? 
+                                selectedNotes.map(n => `<span class="note-tag ${!NOTE_OPTIONS.includes(n) ? 'custom' : ''}">${n}</span>`).join('') :
+                                '<span class="note-placeholder">Click to add notes</span>'
+                            }
+                        </div>
+                        <div class="notes-dropdown" id="notes-dropdown-${rowIdx}">
+                            ${NOTE_OPTIONS.map(opt => `
+                                <label>
+                                    <input type="checkbox" value="${opt}" 
+                                        ${selectedNotes.includes(opt) ? 'checked' : ''}
+                                        onchange="updateNoteMulti('${row.date}', ${rowIdx}, this)" />
+                                    ${opt}
+                                </label>
+                            `).join('')}
+                            <div class="custom-note-input">
+                                <input type="text" id="custom-note-${rowIdx}" placeholder="Add custom note..." />
+                                <button onclick="addCustomNote('${row.date}', ${rowIdx})">Add</button>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// ============================================================
+// NOTES DROPDOWN TOGGLE
+// ============================================================
+
+function toggleNotesDropdown(date, rowIdx) {
+    const dropdown = document.getElementById(`notes-dropdown-${rowIdx}`);
+    if (!dropdown) return;
+    
+    document.querySelectorAll('.notes-dropdown').forEach(el => {
+        if (el.id !== `notes-dropdown-${rowIdx}`) {
+            el.classList.remove('show');
+        }
+    });
+    
+    dropdown.classList.toggle('show');
+    // Focus the custom input if dropdown is shown
+    if (dropdown.classList.contains('show')) {
+        const input = document.getElementById(`custom-note-${rowIdx}`);
+        if (input) setTimeout(() => input.focus(), 100);
+    }
+}
+
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.notes-container')) {
+        document.querySelectorAll('.notes-dropdown').forEach(el => {
+            el.classList.remove('show');
+        });
+    }
+});
+
+// Allow Enter key to add custom note
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+        const target = e.target;
+        if (target.id && target.id.startsWith('custom-note-')) {
+            const rowIdx = parseInt(target.id.replace('custom-note-', ''));
+            const date = target.closest('.notes-container')?.querySelector('.notes-display')?.dataset?.date;
+            if (date) {
+                addCustomNote(date, rowIdx);
+            }
+        }
+    }
+});
+
+// ============================================================
+// CUSTOM NOTE FUNCTIONS
+// ============================================================
+
+function addCustomNote(date, rowIdx) {
+    const input = document.getElementById(`custom-note-${rowIdx}`);
+    if (!input) return;
+    const value = input.value.trim();
+    if (!value) return;
+    
+    const dropdown = document.getElementById(`notes-dropdown-${rowIdx}`);
+    if (!dropdown) return;
+    
+    // Get current selected notes
+    const checkedBoxes = dropdown.querySelectorAll('input[type="checkbox"]:checked');
+    const currentNotes = Array.from(checkedBoxes).map(cb => cb.value);
+    
+    // Check if custom note already exists
+    if (currentNotes.includes(value)) {
+        showToast('⚠️ Note already added', 'error');
+        input.value = '';
+        return;
+    }
+    
+    // Add the custom note
+    const newNotes = [...currentNotes, value];
+    
+    // Update the data
+    if (!appData.notes) appData.notes = {};
+    const key = `${date}_${rowIdx}`;
+    appData.notes[key] = newNotes;
+    
+    const row = appData.calendar.find(r => r.date === date);
+    if (row) {
+        row.notes = newNotes;
+    }
+    
+    appData.editLog.push({
+        date: date,
+        store: '—',
+        field: 'Notes',
+        oldValue: currentNotes.join(', ') || '—',
+        newValue: newNotes.join(', ') || '—',
+        timestamp: new Date().toISOString()
+    });
+    
+    saveData();
+    renderCalendar();
+    renderValidation();
+    renderEditsLog();
+    
+    input.value = '';
+    showToast('✅ Custom note added', 'success');
+}
+
+// ============================================================
+// EDIT FUNCTIONS
+// ============================================================
+
+function updateStore(date, rowIdx, taskIdx, value) {
+    const storeCode = parseInt(value);
+    const row = appData.calendar.find(r => r.date === date);
+    if (!row || row.isOff) return;
+    if (!row.tasks[taskIdx]) {
+        row.tasks[taskIdx] = {};
+    }
+    const oldStore = row.tasks[taskIdx].storeCode;
+    
+    row.tasks[taskIdx].storeCode = storeCode;
+    
+    const key = `${date}_${row.tasks[taskIdx].storeCode}_${taskIdx}`;
+    appData.editedCells[key] = true;
+    
+    if (oldStore && oldStore !== storeCode) {
+        appData.editLog.push({
+            date: date,
+            store: oldStore + ' → ' + storeCode,
+            field: 'Store',
+            oldValue: oldStore,
+            newValue: storeCode,
+            timestamp: new Date().toISOString()
+        });
+    }
+    
+    saveData();
+    renderCalendar();
+    renderValidation();
+    renderEditsLog();
+}
+
+function updateTask(date, rowIdx, taskIdx, value) {
+    const row = appData.calendar.find(r => r.date === date);
+    if (!row || row.isOff) return;
+    if (!row.tasks[taskIdx]) {
+        row.tasks[taskIdx] = {};
+    }
+    const oldTask = row.tasks[taskIdx].task;
+    row.tasks[taskIdx].task = value;
+    row.tasks[taskIdx].isROR = (value === 'ROR');
+    
+    if (value === 'Primary visit') row.tasks[taskIdx].duration = '3 hrs';
+    else if (value === 'Secondary visit') row.tasks[taskIdx].duration = '1 hr';
+    else if (value === 'ROR') row.tasks[taskIdx].duration = '2 hrs';
+    else if (value === 'Monthly Inventory') row.tasks[taskIdx].duration = '8 hrs';
+    else row.tasks[taskIdx].duration = '';
+    
+    const key = `${date}_${row.tasks[taskIdx].storeCode}_${taskIdx}`;
+    appData.editedCells[key] = true;
+    
+    if (oldTask && oldTask !== value) {
+        appData.editLog.push({
+            date: date,
+            store: row.tasks[taskIdx].storeCode || 'N/A',
+            field: 'Task',
+            oldValue: oldTask || '—',
+            newValue: value || '—',
+            timestamp: new Date().toISOString()
+        });
+    }
+    
+    saveData();
+    renderCalendar();
+    renderValidation();
+    renderEditsLog();
+}
+
+function updateNoteMulti(date, rowIdx, checkbox) {
+    const dropdown = document.getElementById(`notes-dropdown-${rowIdx}`);
+    if (!dropdown) return;
+    
+    const checked = Array.from(dropdown.querySelectorAll('input[type="checkbox"]:checked'))
+        .map(cb => cb.value);
+    
+    if (!appData.notes) appData.notes = {};
+    const key = `${date}_${rowIdx}`;
+    const oldNote = appData.notes[key] || [];
+    
+    appData.notes[key] = checked;
+    
+    const row = appData.calendar.find(r => r.date === date);
+    if (row) {
+        row.notes = checked;
+    }
+    
+    if (JSON.stringify(oldNote) !== JSON.stringify(checked)) {
+        appData.editLog.push({
+            date: date,
+            store: '—',
+            field: 'Notes',
+            oldValue: oldNote.join(', ') || '—',
+            newValue: checked.join(', ') || '—',
+            timestamp: new Date().toISOString()
+        });
+    }
+    
+    saveData();
+    renderCalendar();
+    renderValidation();
+    renderEditsLog();
+}
+
+function toggleTask(date, storeCode, taskIndex) {
+    const key = `${date}_${storeCode}_${taskIndex}`;
+    if (!appData.completedTasks) appData.completedTasks = {};
+    const oldStatus = appData.completedTasks[key] || false;
+    appData.completedTasks[key] = !appData.completedTasks[key];
+    
+    appData.editLog.push({
+        date: date,
+        store: storeCode || 'N/A',
+        field: 'Completion',
+        oldValue: oldStatus ? 'Completed' : 'Pending',
+        newValue: appData.completedTasks[key] ? 'Completed' : 'Pending',
+        timestamp: new Date().toISOString()
+    });
+    
+    saveData();
+    renderCompletion();
+    renderEditsLog();
+}
+
+// ============================================================
+// VALIDATION
+// ============================================================
+
+function renderValidation() {
+    const body = document.getElementById('validationBody');
+    const summary = document.getElementById('validationSummary');
+
+    if (!body || !summary) return;
+
+    if (!appData.calendar || appData.calendar.length === 0) {
+        body.innerHTML = `<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:20px;">Generate calendar first</td></tr>`;
+        summary.innerHTML = `<div class="val-card warn"><div class="label">Status</div><div class="value">No data</div></div>`;
+        return;
+    }
+
+    const storeMap = buildStoreMap();
+    const editedCount = Object.keys(appData.editedCells || {}).length;
+
+    body.innerHTML = Object.entries(storeMap).map(([code, st]) => {
+        const status = validateStore(st, code);
+        const storeEdits = Object.keys(appData.editedCells || {}).filter(k => k.includes(`_${code}_`));
+        const hasEdits = storeEdits.length > 0;
+        return `
+            <tr>
+                <td><strong>${code}</strong></td>
+                <td>${st.ror}</td>
+                <td>${st.primary}</td>
+                <td>${st.secondary}</td>
+                <td>${st.total}</td>
+                <td>${st.rorDate || '—'}</td>
+                <td><span class="badge-status ${status.color}">${status.label}</span></td>
+                <td>${hasEdits ? '✏️ Yes' : '—'}</td>
+            </tr>
+        `;
+    }).join('');
+
+    const totalStores = Object.keys(storeMap).length;
+    const okStores = Object.values(storeMap).filter(s => {
+        const v = validateStore(s, '');
+        return v.label === 'OK';
+    }).length;
+    const workingDays = appData.calendar.filter(r => !r.isOff).length;
+    const offDays = appData.calendar.filter(r => r.isOff).length;
+    const lastRor = Math.max(...Object.values(storeMap).map(s => s.rorDate ? new Date(s.rorDate).getDate() : 0), 0);
+    const rorBy15 = lastRor <= appData.settings.rorFinishDay ? 'YES' : 'NO';
+
+    const missingRor = Object.entries(storeMap).filter(([code, st]) => st.ror !== 1).map(([code]) => code);
+
+    summary.innerHTML = `
+        <div class="val-card ${okStores === totalStores ? 'ok' : 'warn'}">
+            <div class="label">Stores Fully Covered</div>
+            <div class="value">${okStores} / ${totalStores}</div>
+        </div>
+        <div class="val-card ok">
+            <div class="label">Working Days</div>
+            <div class="value">${workingDays}</div>
+        </div>
+        <div class="val-card ok">
+            <div class="label">Days Off</div>
+            <div class="value">${offDays}</div>
+        </div>
+        <div class="val-card ${rorBy15 === 'YES' ? 'ok' : 'err'}">
+            <div class="label">ROR done by day ${appData.settings.rorFinishDay}?</div>
+            <div class="value">${rorBy15}</div>
+        </div>
+        <div class="val-card ok">
+            <div class="label">Last ROR Date</div>
+            <div class="value">Day ${lastRor || '—'}</div>
+        </div>
+        <div class="val-card ${missingRor.length === 0 ? 'ok' : 'err'}">
+            <div class="label">Missing ROR Stores</div>
+            <div class="value">${missingRor.length > 0 ? missingRor.join(', ') : 'None ✅'}</div>
+        </div>
+        <div class="val-card ${editedCount > 0 ? 'warn' : 'ok'}">
+            <div class="label">Manual Edits</div>
+            <div class="value">${editedCount}</div>
+        </div>
+    `;
+}
+
+function buildStoreMap() {
+    const storeMap = {};
+    appData.stores.forEach(s => {
+        storeMap[s.code] = { 
+            ror: 0, 
+            primary: 0, 
+            secondary: 0, 
+            total: 0, 
+            rorDate: null
+        };
+    });
+
+    appData.calendar.forEach(row => {
+        if (row.isOff) return;
+        (row.tasks || []).forEach(t => {
+            if (!t || !t.storeCode || !storeMap[t.storeCode]) return;
+            const st = storeMap[t.storeCode];
+            st.total++;
+            if (t.task === 'ROR') { 
+                st.ror++; 
+                st.rorDate = row.date; 
+            }
+            else if (t.task && t.task === 'Primary visit') st.primary++;
+            else if (t.task && t.task === 'Secondary visit') st.secondary++;
+        });
+    });
+    return storeMap;
+}
+
+function validateStore(st, code) {
+    if (st.ror !== 1) return { label: 'ROR not once', color: 'badge-off' };
+    if (st.primary === 0) return { label: 'No Primary', color: 'badge-off' };
+    if (st.secondary === 0) return { label: 'No Secondary', color: 'badge-off' };
+    return { label: 'OK', color: 'badge-working' };
+}
+
+// ============================================================
+// EDITS LOG
+// ============================================================
+
+function renderEditsLog() {
+    const body = document.getElementById('editsLogBody');
+    if (!body) return;
+
+    if (!appData.editLog || appData.editLog.length === 0) {
+        body.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:15px;">No manual edits recorded yet</td></tr>`;
+        return;
+    }
+
+    const logs = [...appData.editLog].reverse().slice(0, 50);
+    
+    body.innerHTML = logs.map(log => `
+        <tr>
+            <td style="font-size:11px;">${log.date}</td>
+            <td style="font-size:11px;">${log.store}</td>
+            <td style="font-size:11px;">${log.field}</td>
+            <td style="font-size:11px;color:#dc2626;">${log.oldValue}</td>
+            <td style="font-size:11px;color:#16a34a;">${log.newValue}</td>
+        </tr>
+    `).join('');
+}
+
+// ============================================================
+// COMPLETION
+// ============================================================
+
+function renderCompletion() {
+    const body = document.getElementById('completionBody');
+    const summary = document.getElementById('completionSummary');
+
+    if (!body || !summary) return;
+
+    if (!appData.calendar || appData.calendar.length === 0) {
+        body.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:20px;">Generate calendar first</td></tr>`;
+        summary.innerHTML = `<div class="val-card warn"><div class="label">Status</div><div class="value">No data</div></div>`;
+        return;
+    }
+
+    if (!appData.completedTasks) appData.completedTasks = {};
+
+    const storeTaskCount = {};
+    appData.stores.forEach(s => {
+        storeTaskCount[s.code] = { assigned: 0, completed: 0 };
+    });
+
+    appData.calendar.forEach(row => {
+        if (row.isOff) return;
+        (row.tasks || []).forEach((t, idx) => {
+            if (!t || !t.storeCode || !t.task) return;
+            if (t.task === 'Day off' || t.task === '' || t.task === '—') return;
+            storeTaskCount[t.storeCode].assigned++;
+            const key = `${row.date}_${t.storeCode}_${idx}`;
+            if (appData.completedTasks[key]) {
+                storeTaskCount[t.storeCode].completed++;
+            }
+        });
+    });
+
+    const totalStores = Object.keys(storeTaskCount).length;
+    let totalAssigned = 0;
+    let totalCompleted = 0;
+    let fullyComplete = 0;
+
+    body.innerHTML = Object.entries(storeTaskCount).map(([code, st]) => {
+        const pct = st.assigned > 0 ? Math.round((st.completed / st.assigned) * 100) : 0;
+        totalAssigned += st.assigned;
+        totalCompleted += st.completed;
+        if (st.assigned > 0 && pct === 100) fullyComplete++;
+
+        let statusLabel = '⚠️ Pending';
+        let statusClass = 'badge-pending';
+        if (st.assigned === 0) {
+            statusLabel = '—';
+            statusClass = '';
+        } else if (pct === 100) {
+            statusLabel = '✅ Complete';
+            statusClass = 'badge-completed';
+        } else if (pct >= 50) {
+            statusLabel = '🔄 In Progress';
+            statusClass = 'badge-pending';
+        }
+
+        const barColor = pct >= 80 ? '' : (pct >= 50 ? 'warning' : 'danger');
+
+        return `
+            <tr>
+                <td><strong>${code}</strong></td>
+                <td>${st.assigned}</td>
+                <td>${st.completed}</td>
+                <td>
+                    ${pct}%
+                    <div class="completion-bar">
+                        <div class="fill ${barColor}" style="width:${pct}%;"></div>
+                    </div>
+                </td>
+                <td><span class="badge-status ${statusClass}">${statusLabel}</span></td>
+            </tr>
+        `;
+    }).join('');
+
+    const overallPct = totalAssigned > 0 ? Math.round((totalCompleted / totalAssigned) * 100) : 0;
+
+    summary.innerHTML = `
+        <div class="val-card ok">
+            <div class="label">Total Stores</div>
+            <div class="value">${totalStores}</div>
+        </div>
+        <div class="val-card ${overallPct === 100 ? 'ok' : 'warn'}">
+            <div class="label">Overall Completion</div>
+            <div class="value">${overallPct}%</div>
+        </div>
+        <div class="val-card ok">
+            <div class="label">Tasks Assigned</div>
+            <div class="value">${totalAssigned}</div>
+        </div>
+        <div class="val-card ok">
+            <div class="label">Tasks Completed</div>
+            <div class="value">${totalCompleted}</div>
+        </div>
+        <div class="val-card ${fullyComplete === totalStores ? 'ok' : 'warn'}">
+            <div class="label">Fully Complete Stores</div>
+            <div class="value">${fullyComplete} / ${totalStores}</div>
+        </div>
+    `;
+}
+
+// ============================================================
+// EXCEL EXPORT
+// ============================================================
+
+function exportExcel() {
+    if (!appData.calendar || appData.calendar.length === 0) {
+        showToast('⚠️ Generate calendar first!', 'error');
+        return;
+    }
+
+    const month = document.getElementById('monthSelect')?.value || '8';
+    const year = document.getElementById('yearInput')?.value || '2026';
+    const monthName = new Date(year, month - 1).toLocaleString('default', { month: 'long' });
+
+    const excelData = [];
+    const headers = ['Date', 'Day', 'Shift', 'Timing',
+        'Store 1', 'Task 1', 'Completed 1',
+        'Store 2', 'Task 2', 'Completed 2',
+        'Store 3', 'Task 3', 'Completed 3',
+        'Store 4', 'Task 4', 'Completed 4',
+        'Notes'];
+    excelData.push(headers);
+
+    appData.calendar.forEach(row => {
+        const tasks = row.tasks || [];
+        const shift = row.shift || appData.shifts.find(s => s.shift === row.shiftNum) || appData.shifts[0];
+        const morningTime = `${shift.s1Start} - ${shift.s1End}`;
+        const eveningTime = `${shift.s2Start} - ${shift.s2End}`;
+        const timingDisplay = row.isOff ? 'DAY OFF' : `Morning: ${morningTime}, Evening: ${eveningTime}`;
+
+        const noteKey = `${row.date}_${appData.calendar.indexOf(row)}`;
+        const noteValue = (appData.notes[noteKey] || row.notes || []).join(', ') || '—';
+
+        const rowData = [
+            row.date || '',
+            row.day || '',
+            row.isOff ? 'OFF' : `Shift ${row.shiftNum || ''}`,
+            timingDisplay,
+            tasks[0] ? tasks[0].storeCode : '',
+            tasks[0] ? tasks[0].task : '',
+            tasks[0] ? (appData.completedTasks[`${row.date}_${tasks[0].storeCode}_0`] ? '✅' : '') : '',
+            tasks[1] ? tasks[1].storeCode : '',
+            tasks[1] ? tasks[1].task : '',
+            tasks[1] ? (appData.completedTasks[`${row.date}_${tasks[1].storeCode}_1`] ? '✅' : '') : '',
+            tasks[2] ? tasks[2].storeCode : '',
+            tasks[2] ? tasks[2].task : '',
+            tasks[2] ? (appData.completedTasks[`${row.date}_${tasks[2].storeCode}_2`] ? '✅' : '') : '',
+            tasks[3] ? tasks[3].storeCode : '',
+            tasks[3] ? tasks[3].task : '',
+            tasks[3] ? (appData.completedTasks[`${row.date}_${tasks[3].storeCode}_3`] ? '✅' : '') : '',
+            noteValue
+        ];
+        excelData.push(rowData);
+    });
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(excelData);
+
+    ws['!cols'] = [
+        { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 30 },
+        { wch: 10 }, { wch: 20 }, { wch: 10 },
+        { wch: 10 }, { wch: 20 }, { wch: 10 },
+        { wch: 10 }, { wch: 20 }, { wch: 10 },
+        { wch: 10 }, { wch: 20 }, { wch: 10 },
+        { wch: 35 }
+    ];
+
+    XLSX.utils.book_append_sheet(wb, ws, 'Calendar');
+    
+    const storeMap = buildStoreMap();
+    const summaryData = [
+        ['Store', 'ROR', 'Primary', 'Secondary', 'Total', 'ROR Date', 'Status', 'Edited']
+    ];
+    Object.entries(storeMap).forEach(([code, st]) => {
+        const status = validateStore(st, code);
+        const hasEdits = Object.keys(appData.editedCells || {}).filter(k => k.includes(`_${code}_`)).length > 0;
+        summaryData.push([
+            code, st.ror, st.primary, st.secondary,
+            st.total, st.rorDate || '—', status.label,
+            hasEdits ? 'Yes' : 'No'
+        ]);
+    });
+    const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+    wsSummary['!cols'] = [
+        { wch: 12 }, { wch: 8 }, { wch: 10 }, { wch: 12 },
+        { wch: 10 }, { wch: 14 }, { wch: 14 }, { wch: 10 }
+    ];
+    XLSX.utils.book_append_sheet(wb, wsSummary, 'Summary');
+
+    XLSX.writeFile(wb, `Calendar_${monthName}_${year}.xlsx`);
+    showToast('📊 Excel exported successfully!', 'success');
+}
+
+// ============================================================
+// PDF DOWNLOAD
+// ============================================================
+
+function downloadPDF() {
+    if (!appData.calendar || appData.calendar.length === 0) {
+        showToast('⚠️ Generate calendar first!', 'error');
+        return;
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('landscape', 'mm', 'a4');
+    const month = document.getElementById('monthSelect')?.value || '8';
+    const year = document.getElementById('yearInput')?.value || '2026';
+    const monthName = new Date(year, month - 1).toLocaleString('default', { month: 'long' });
+
+    doc.setFontSize(16);
+    doc.text(`Store Visit Calendar - ${monthName} ${year}`, 20, 20);
+    doc.setFontSize(10);
+    doc.text(`Generated: ${new Date().toLocaleDateString()}`, 20, 28);
+
+    const tableData = [];
+    appData.calendar.forEach(row => {
+        const tasks = row.tasks || [];
+        const shift = row.shift || appData.shifts.find(s => s.shift === row.shiftNum) || appData.shifts[0];
+        const morningTime = `${shift.s1Start} - ${shift.s1End}`;
+        const eveningTime = `${shift.s2Start} - ${shift.s2End}`;
+        const timingDisplay = row.isOff ? 'DAY OFF' : `Morning: ${morningTime}\nEvening: ${eveningTime}`;
+        
+        const noteKey = `${row.date}_${appData.calendar.indexOf(row)}`;
+        const noteValue = (appData.notes[noteKey] || row.notes || []).join(', ') || '—';
+
+        const rowData = [
+            row.date || '',
+            row.day || '',
+            row.isOff ? 'OFF' : `Shift ${row.shiftNum || ''}`,
+            timingDisplay,
+            tasks[0] ? tasks[0].storeCode : '',
+            tasks[0] ? tasks[0].task : '',
+            tasks[0] ? (appData.completedTasks[`${row.date}_${tasks[0].storeCode}_0`] ? '✓' : '') : '',
+            tasks[1] ? tasks[1].storeCode : '',
+            tasks[1] ? tasks[1].task : '',
+            tasks[1] ? (appData.completedTasks[`${row.date}_${tasks[1].storeCode}_1`] ? '✓' : '') : '',
+            tasks[2] ? tasks[2].storeCode : '',
+            tasks[2] ? tasks[2].task : '',
+            tasks[2] ? (appData.completedTasks[`${row.date}_${tasks[2].storeCode}_2`] ? '✓' : '') : '',
+            tasks[3] ? tasks[3].storeCode : '',
+            tasks[3] ? tasks[3].task : '',
+            tasks[3] ? (appData.completedTasks[`${row.date}_${tasks[3].storeCode}_3`] ? '✓' : '') : '',
+            noteValue
+        ];
+        tableData.push(rowData);
+    });
+
+    doc.autoTable({
+        head: [['Date', 'Day', 'Shift', 'Timing',
+            'Store 1', 'Task 1', '✓',
+            'Store 2', 'Task 2', '✓',
+            'Store 3', 'Task 3', '✓',
+            'Store 4', 'Task 4', '✓',
+            'Notes']],
+        body: tableData,
+        startY: 35,
+        styles: { fontSize: 5 },
+        headStyles: { fontSize: 6, fillColor: [30, 41, 59] },
+        columnStyles: {
+            0: { cellWidth: 14 }, 1: { cellWidth: 12 }, 2: { cellWidth: 12 }, 3: { cellWidth: 22 },
+            4: { cellWidth: 10 }, 5: { cellWidth: 16 }, 6: { cellWidth: 8 },
+            7: { cellWidth: 10 }, 8: { cellWidth: 16 }, 9: { cellWidth: 8 },
+            10: { cellWidth: 10 }, 11: { cellWidth: 16 }, 12: { cellWidth: 8 },
+            13: { cellWidth: 10 }, 14: { cellWidth: 16 }, 15: { cellWidth: 8 },
+            16: { cellWidth: 30 }
+        },
+        pageBreak: 'auto',
+        margin: { top: 30, bottom: 15 }
+    });
+
+    doc.addPage();
+    doc.setFontSize(14);
+    doc.text('Summary Report', 20, 20);
+
+    const storeMap = buildStoreMap();
+    const totalStores = Object.keys(storeMap).length;
+    const okStores = Object.values(storeMap).filter(s => {
+        const v = validateStore(s, '');
+        return v.label === 'OK';
+    }).length;
+    const workingDays = appData.calendar.filter(r => !r.isOff).length;
+    const offDays = appData.calendar.filter(r => r.isOff).length;
+    const editedCount = Object.keys(appData.editedCells || {}).length;
+
+    doc.setFontSize(10);
+    let y = 35;
+    doc.text(`Total Stores: ${totalStores}`, 20, y);
+    y += 8;
+    doc.text(`Fully Covered Stores: ${okStores} / ${totalStores}`, 20, y);
+    y += 8;
+    doc.text(`Working Days: ${workingDays}`, 20, y);
+    y += 8;
+    doc.text(`Days Off: ${offDays}`, 20, y);
+    y += 8;
+    doc.text(`Manual Edits: ${editedCount}`, 20, y);
+
+    y += 10;
+    const summaryData = Object.entries(storeMap).map(([code, st]) => {
+        const status = validateStore(st, code);
+        const hasEdits = Object.keys(appData.editedCells || {}).filter(k => k.includes(`_${code}_`)).length > 0;
+        return [
+            code, st.ror, st.primary, st.secondary,
+            st.total, st.rorDate || '—', status.label,
+            hasEdits ? 'Yes' : 'No'
+        ];
+    });
+
+    doc.autoTable({
+        head: [['Store', 'ROR', 'Primary', 'Secondary', 'Total', 'ROR Date', 'Status', 'Edited']],
+        body: summaryData,
+        startY: y,
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [30, 41, 59] }
+    });
+
+    doc.save(`Calendar_${monthName}_${year}.pdf`);
+    showToast('📄 PDF downloaded!', 'success');
+}
+
+// ============================================================
+// UI HELPERS
+// ============================================================
+
+function updateMonthYearUI() {
+    const sel = document.getElementById('monthSelect');
+    if (!sel) return;
+    const currentMonth = new Date().getMonth() + 1;
+    sel.innerHTML = '';
+    for (let m = 1; m <= 12; m++) {
+        const opt = document.createElement('option');
+        opt.value = m;
+        opt.textContent = new Date(2026, m - 1).toLocaleString('default', { month: 'long' });
+        if (m === currentMonth || m === 8) opt.selected = true;
+        sel.appendChild(opt);
+    }
+}
+
+function regenerate() {
+    const offDayStart = document.getElementById('offDayStart');
+    if (offDayStart) appData.settings.offDayStart = offDayStart.value;
+
+    ['rorPerDay', 'visitsPerDay', 'rorFinishDay'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) appData.settings[id] = parseInt(el.value) || 2;
+    });
+
+    ['morningPeak', 'eveningPeak'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) appData.settings[id] = el.value || '07:00';
+    });
+
+    generateCalendar();
+}
+
+function showToast(msg, type = 'success') {
+    const el = document.getElementById('toast');
+    if (!el) return;
+    el.textContent = msg;
+    el.className = 'toast show ' + type;
+    clearTimeout(el._timeout);
+    el._timeout = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ---- TABS ----
+document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        this.classList.add('active');
+        const panelId = 'panel-' + this.dataset.tab;
+        const panel = document.getElementById(panelId);
+        if (panel) panel.classList.add('active');
+    });
+});
+
+document.getElementById('offDayStart')?.addEventListener('change', function() {
+    appData.settings.offDayStart = this.value;
+    renderOffDayInfo();
+});
+
+document.getElementById('monthSelect')?.addEventListener('change', renderOffDayInfo);
+document.getElementById('yearInput')?.addEventListener('change', renderOffDayInfo);
+
+renderAll();
+
+if (!appData.calendar || appData.calendar.length === 0) {
+    setTimeout(generateCalendar, 500);
+}
+</script>
+</body>
+</html>
