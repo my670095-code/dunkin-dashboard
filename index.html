@@ -630,6 +630,39 @@
             .sidebar:not(.collapsed) + .sidebar-toggle { left: 48px; }
             .sidebar-toggle .toggle-icon { font-size: 8px; }
         }
+        
+        /* Ranking table sorting styles */
+        .sort-icon { 
+            font-size: 0.6rem; 
+            color: var(--text-dim); 
+            margin-left: 4px; 
+            display: inline-block;
+            transition: transform 0.2s;
+        }
+        .ranking-th { 
+            cursor: pointer; 
+            user-select: none; 
+            position: relative;
+            padding-right: 20px !important;
+        }
+        .ranking-th:hover { 
+            background: var(--bg-hover) !important; 
+        }
+        .ranking-th .sort-icon {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        .ranking-th .sort-icon.active { 
+            color: var(--accent); 
+        }
+        .ranking-th .sort-icon.asc { 
+            color: var(--accent); 
+        }
+        .ranking-th .sort-icon.desc { 
+            color: var(--accent); 
+        }
     </style>
 </head>
 <body>
@@ -1897,24 +1930,37 @@ function toggleChartType(chartId, type) {
         userRoleBadge.innerText = user.username;
         setTimeout(loadSidebarState, 100);
         
+        // Load data from localStorage AFTER login
         const hasData = loadDataFromLocalStorage();
-        if (hasData && mainData.length > 0) {
-            if (mainData.length > 0) {
-                fileNameDisplay.textContent = currentFileName || 'main_data';
-                fileNameDisplay.className = 'file-status loaded';
-            }
-            if (allocationData.length > 0) {
+        
+        if (mainData && mainData.length > 0) {
+            fileNameDisplay.textContent = currentFileName || 'main_data';
+            fileNameDisplay.className = 'file-status loaded';
+            
+            if (allocationData && allocationData.length > 0) {
                 allocationFileNameDisplay.textContent = allocationFileName || 'allocation_data';
                 allocationFileNameDisplay.className = 'file-status loaded';
             }
+            
+            const keys = Object.keys(mainData[0]);
+            buildColumnMap(keys);
             mergeData();
             updateDataStatusBadge();
+            
             setTimeout(() => {
                 navigateTo('charts');
                 populateStoreWiseFilters();
                 renderStoreWise();
                 populateMomFilters();
                 renderMoM();
+                populateStoreFilters();
+                renderStorePerformance();
+                populateCustomDateFilter();
+                populateCustomTerritoryFilter();
+                populateCustomAreaFilter();
+                renderCustomRanking();
+                renderFullDataTable();
+                applyFilters();
             }, 200);
         } else {
             setEmptyDashboardState();
@@ -1997,6 +2043,7 @@ function toggleChartType(chartId, type) {
                     if (data && data.length > 0) {
                         mainData = data;
                         currentFileName = localStorage.getItem('dunkin_main_filename') || 'main_data';
+                        console.log(`✅ Loaded ${mainData.length} rows from localStorage`);
                     }
                 }
                 const allocStored = localStorage.getItem('dunkin_allocation_data');
@@ -2005,6 +2052,7 @@ function toggleChartType(chartId, type) {
                     if (data && data.length > 0) {
                         allocationData = data;
                         allocationFileName = localStorage.getItem('dunkin_allocation_filename') || 'allocation_data';
+                        console.log(`✅ Loaded ${allocationData.length} allocation rows from localStorage`);
                     }
                 }
                 const selectionsStored = localStorage.getItem('dunkin_custom_item_selections');
@@ -2124,7 +2172,6 @@ function toggleChartType(chartId, type) {
         }
         columnMap = newMap;
         
-        // Build available columns for data table (exclude Regional Manager)
         availableColumns = [];
         if (columnMap.date) availableColumns.push({key: columnMap.date, label: 'Date'});
         if (columnMap.locationNumber) availableColumns.push({key: columnMap.locationNumber, label: 'Location #'});
@@ -2136,19 +2183,16 @@ function toggleChartType(chartId, type) {
         if (columnMap.channel) availableColumns.push({key: columnMap.channel, label: 'Channel'});
         if (columnMap.areaManager) availableColumns.push({key: columnMap.areaManager, label: 'Area Manager'});
         if (columnMap.territoryManager) availableColumns.push({key: columnMap.territoryManager, label: 'Territory Manager'});
-        // Regional Manager excluded per request
         
-        // Initialize visibility (all true by default)
         availableColumns.forEach(col => {
             if (columnVisibility[col.key] === undefined) {
                 columnVisibility[col.key] = true;
             }
         });
         
-        // Initialize widths
         availableColumns.forEach(col => {
             if (!columnWidths[col.key]) {
-                columnWidths[col.key] = 120; // default width
+                columnWidths[col.key] = 120;
             }
         });
         
@@ -2252,7 +2296,6 @@ function toggleChartType(chartId, type) {
                 document.addEventListener('mouseup', onMouseUp);
             });
             th.appendChild(handle);
-            // Apply saved width
             if (columnWidths[key]) {
                 th.style.width = columnWidths[key] + 'px';
                 th.style.minWidth = columnWidths[key] + 'px';
@@ -5590,7 +5633,6 @@ function toggleChartType(chartId, type) {
                     return color;
                 });
             const borderColors = isPie ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.4)';
-            // Use chart type from toggle
             const chartType = chartTypes[id.replace('chart', '').toLowerCase()] || type;
             return new Chart(canvas, {
                 type: chartType,
@@ -5656,7 +5698,6 @@ function toggleChartType(chartId, type) {
         const searchTerm = tableSearchInput ? tableSearchInput.value.toLowerCase().trim() : '';
         const majorGroupFilterVal = majorGroupFilter ? majorGroupFilter.value : '';
         const { locationNumber, locationName, menuItem, majorGroup, sales, count, areaManager, territoryManager } = columnMap;
-        // Regional Manager excluded from data table per request
         
         let filteredData = data.filter(row => {
             if (searchTerm) {
@@ -5687,7 +5728,6 @@ function toggleChartType(chartId, type) {
             return;
         }
         
-        // Build columns based on visibility
         const columns = [];
         const colKeys = [];
         if (columnVisibility[locationNumber] !== false && locationNumber) {
@@ -5726,7 +5766,6 @@ function toggleChartType(chartId, type) {
             columns.push({key: territoryManager, label: 'Territory Manager'});
             colKeys.push(territoryManager);
         }
-        // Regional Manager excluded
         
         let html = `<table>`;
         html += `<thead><tr>`;
@@ -5753,7 +5792,6 @@ function toggleChartType(chartId, type) {
         html += `</tbody></table>`;
         if (fullTableContainer) {
             fullTableContainer.innerHTML = html;
-            // Make columns resizable
             const table = fullTableContainer.querySelector('table');
             if (table) {
                 makeColumnsResizable(table);
@@ -6295,6 +6333,9 @@ function toggleChartType(chartId, type) {
                 datePreset: 'all'
             };
             this.isGeneratingPDF = false;
+            // Ranking sort state
+            this.rankingSortField = 'sales';
+            this.rankingSortOrder = 'desc';
         }
 
         init() {
@@ -6386,6 +6427,28 @@ function toggleChartType(chartId, type) {
             }
         }
 
+        // ===== RANKING SORTING FUNCTIONS =====
+        sortRanking(field) {
+            if (this.rankingSortField === field) {
+                this.rankingSortOrder = this.rankingSortOrder === 'asc' ? 'desc' : 'asc';
+            } else {
+                this.rankingSortField = field;
+                this.rankingSortOrder = 'desc';
+            }
+            // Re-render the ranking table with new sort
+            if (this.processedData && this.processedData.storeData) {
+                this.renderRanking(this.processedData);
+            }
+        }
+
+        getSortIcon(field) {
+            if (this.rankingSortField === field) {
+                return this.rankingSortOrder === 'asc' ? '▲' : '▼';
+            }
+            return '⇅';
+        }
+
+        // ===== UI CREATION =====
         createUI() {
             this.addSalesNavigation();
             this.createSalesPage();
@@ -6723,7 +6786,7 @@ function toggleChartType(chartId, type) {
                                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
                                     <div>
                                         <h3 style="color:var(--text-secondary);font-size:15px;margin:0;">🏆 Store Performance Ranking</h3>
-                                        <span style="color:var(--text-muted);font-size:11px;">Top performers based on sales</span>
+                                        <span style="color:var(--text-muted);font-size:11px;">Click column headers to sort</span>
                                     </div>
                                 </div>
                                 <div id="salesRankingTable" style="overflow-x:auto;"></div>
@@ -6932,11 +6995,18 @@ function toggleChartType(chartId, type) {
 
             const map = this.salesColumnMap;
             const locNameCol = map.locationName || 'Location Name';
+            const locNumCol = map.locationNumber || 'Location Number';
             
             const stores = new Set();
+            const storeInfo = {};
+            
             this.salesData.forEach(row => {
                 const name = String(row[locNameCol] || '').trim();
-                if (name) stores.add(name);
+                const num = String(row[locNumCol] || '').trim();
+                if (name) {
+                    stores.add(name);
+                    storeInfo[name] = num || name;
+                }
             });
 
             const sortedStores = Array.from(stores).sort();
@@ -6945,7 +7015,8 @@ function toggleChartType(chartId, type) {
             sortedStores.forEach(store => {
                 const option = document.createElement('option');
                 option.value = store;
-                option.textContent = store;
+                const num = storeInfo[store] || '';
+                option.textContent = num ? `${store} (#${num})` : store;
                 option.style.cssText = 'background:var(--sales-filter-input);color:var(--text-primary);';
                 select.appendChild(option);
             });
@@ -6955,7 +7026,8 @@ function toggleChartType(chartId, type) {
                 sortedStores.forEach(store => {
                     const option = document.createElement('option');
                     option.value = store;
-                    option.textContent = store;
+                    const num = storeInfo[store] || '';
+                    option.textContent = num ? `${store} (#${num})` : store;
                     option.style.cssText = 'background:var(--sales-filter-input);color:var(--text-primary);';
                     compare1.appendChild(option);
                 });
@@ -6965,7 +7037,8 @@ function toggleChartType(chartId, type) {
                 sortedStores.forEach(store => {
                     const option = document.createElement('option');
                     option.value = store;
-                    option.textContent = store;
+                    const num = storeInfo[store] || '';
+                    option.textContent = num ? `${store} (#${num})` : store;
                     option.style.cssText = 'background:var(--sales-filter-input);color:var(--text-primary);';
                     compare2.appendChild(option);
                 });
@@ -7650,7 +7723,8 @@ function toggleChartType(chartId, type) {
             if (elements.apc) elements.apc.textContent = processedData.avgAPC.toFixed(2);
             if (elements.stores) elements.stores.textContent = processedData.totalStores;
             if (elements.topStore && processedData.topStore) {
-                elements.topStore.textContent = processedData.topStore.name;
+                const num = processedData.topStore.number || '';
+                elements.topStore.textContent = num ? `${processedData.topStore.name} (#${num})` : processedData.topStore.name;
                 elements.topStore.title = processedData.topStore.name;
             }
             if (elements.topTender && processedData.topTender) {
@@ -7693,9 +7767,10 @@ function toggleChartType(chartId, type) {
             const storeCtx = document.getElementById('salesChartByStore');
             if (storeCtx && processedData.storeData.length > 0) {
                 try {
-                    const labels = processedData.storeData.map(s => 
-                        s.name.length > 20 ? s.name.substring(0, 20) + '...' : s.name
-                    );
+                    const labels = processedData.storeData.map(s => {
+                        const num = s.number ? ` (#${s.number})` : '';
+                        return s.name.length > 15 ? s.name.substring(0, 15) + '...' + num : s.name + num;
+                    });
                     const values = processedData.storeData.map(s => s.sales);
                     const chartType = this.chartTypes.store || 'bar';
                     
@@ -7765,9 +7840,10 @@ function toggleChartType(chartId, type) {
             const customerCtx = document.getElementById('salesChartCustomerCount');
             if (customerCtx && processedData.storeData.length > 0) {
                 try {
-                    const labels = processedData.storeData.map(s => 
-                        s.name.length > 20 ? s.name.substring(0, 20) + '...' : s.name
-                    );
+                    const labels = processedData.storeData.map(s => {
+                        const num = s.number ? ` (#${s.number})` : '';
+                        return s.name.length > 15 ? s.name.substring(0, 15) + '...' + num : s.name + num;
+                    });
                     const values = processedData.storeData.map(s => s.customers);
                     const chartType = this.chartTypes.customer || 'bar';
                     
@@ -7830,9 +7906,10 @@ function toggleChartType(chartId, type) {
             const apcCtx = document.getElementById('salesChartAPC');
             if (apcCtx && processedData.storeData.length > 0) {
                 try {
-                    const labels = processedData.storeData.map(s => 
-                        s.name.length > 20 ? s.name.substring(0, 20) + '...' : s.name
-                    );
+                    const labels = processedData.storeData.map(s => {
+                        const num = s.number ? ` (#${s.number})` : '';
+                        return s.name.length > 15 ? s.name.substring(0, 15) + '...' + num : s.name + num;
+                    });
                     const values = processedData.storeData.map(s => s.apc);
                     const chartType = this.chartTypes.apc || 'bar';
                     
@@ -8153,7 +8230,10 @@ function toggleChartType(chartId, type) {
                 try {
                     const distColors = ['#1a237e', '#283593', '#303f9f', '#3949ab', '#3f51b5', '#4a148c', '#6a1b9a', '#7b1fa2', '#8e24aa', '#9c27b0', '#1b5e20', '#2e7d32', '#388e3c', '#43a047', '#4caf50'];
                     const topStores = processedData.storeData.slice(0, 10);
-                    const labels = topStores.map(s => s.name.length > 15 ? s.name.substring(0, 15) + '...' : s.name);
+                    const labels = topStores.map(s => {
+                        const num = s.number ? ` (#${s.number})` : '';
+                        return s.name.length > 12 ? s.name.substring(0, 12) + '...' + num : s.name + num;
+                    });
                     const values = topStores.map(s => s.sales);
                     
                     this.salesCharts.distribution = new Chart(distCtx.getContext('2d'), {
@@ -8209,30 +8289,59 @@ function toggleChartType(chartId, type) {
             const container = document.getElementById('salesRankingTable');
             if (!container || !processedData.storeData || processedData.storeData.length === 0) return;
 
+            // Sort data based on current sort state
+            const sortedData = [...processedData.storeData];
+            const field = this.rankingSortField;
+            const order = this.rankingSortOrder;
+            
+            sortedData.sort((a, b) => {
+                let valA = a[field] || 0;
+                let valB = b[field] || 0;
+                if (field === 'number') {
+                    valA = String(valA);
+                    valB = String(valB);
+                    return order === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                }
+                return order === 'asc' ? valA - valB : valB - valA;
+            });
+
+            const totalSales = processedData.totalRevenue;
+            
             let html = `<table style="width:100%;border-collapse:collapse;font-size:12px;">
                 <thead>
                     <tr style="border-bottom:1px solid rgba(212,165,116,0.2);">
-                        <th style="padding:6px 10px;text-align:left;color:var(--accent);font-weight:500;">Rank</th>
-                        <th style="padding:6px 10px;text-align:left;color:var(--accent);font-weight:500;">Store Name</th>
-                        <th style="padding:6px 10px;text-align:right;color:var(--accent);font-weight:500;">Sales (SAR)</th>
-                        <th style="padding:6px 10px;text-align:right;color:var(--accent);font-weight:500;">Customers</th>
-                        <th style="padding:6px 10px;text-align:right;color:var(--accent);font-weight:500;">APC</th>
+                        <th style="padding:6px 10px;text-align:left;color:var(--accent);font-weight:500;width:50px;">Rank</th>
+                        <th class="ranking-th" onclick="window.salesModule.sortRanking('name')" style="padding:6px 10px;text-align:left;color:var(--accent);font-weight:500;cursor:pointer;">
+                            Store Name <span class="sort-icon ${this.rankingSortField === 'name' ? (this.rankingSortOrder === 'asc' ? 'asc' : 'desc') : ''}">${this.getSortIcon('name')}</span>
+                        </th>
+                        <th class="ranking-th" onclick="window.salesModule.sortRanking('number')" style="padding:6px 10px;text-align:left;color:var(--accent);font-weight:500;cursor:pointer;">
+                            Store Code <span class="sort-icon ${this.rankingSortField === 'number' ? (this.rankingSortOrder === 'asc' ? 'asc' : 'desc') : ''}">${this.getSortIcon('number')}</span>
+                        </th>
+                        <th class="ranking-th" onclick="window.salesModule.sortRanking('sales')" style="padding:6px 10px;text-align:right;color:var(--accent);font-weight:500;cursor:pointer;">
+                            Sales (SAR) <span class="sort-icon ${this.rankingSortField === 'sales' ? (this.rankingSortOrder === 'asc' ? 'asc' : 'desc') : ''}">${this.getSortIcon('sales')}</span>
+                        </th>
+                        <th class="ranking-th" onclick="window.salesModule.sortRanking('customers')" style="padding:6px 10px;text-align:right;color:var(--accent);font-weight:500;cursor:pointer;">
+                            Customers <span class="sort-icon ${this.rankingSortField === 'customers' ? (this.rankingSortOrder === 'asc' ? 'asc' : 'desc') : ''}">${this.getSortIcon('customers')}</span>
+                        </th>
+                        <th class="ranking-th" onclick="window.salesModule.sortRanking('apc')" style="padding:6px 10px;text-align:right;color:var(--accent);font-weight:500;cursor:pointer;">
+                            APC <span class="sort-icon ${this.rankingSortField === 'apc' ? (this.rankingSortOrder === 'asc' ? 'asc' : 'desc') : ''}">${this.getSortIcon('apc')}</span>
+                        </th>
                         <th style="padding:6px 10px;text-align:center;color:var(--accent);font-weight:500;">% of Total</th>
                     </tr>
                 </thead>
                 <tbody>`;
 
-            const totalSales = processedData.totalRevenue;
-            
-            processedData.storeData.forEach((store, index) => {
+            sortedData.forEach((store, index) => {
                 const rank = index + 1;
                 const percentage = totalSales > 0 ? ((store.sales / totalSales) * 100).toFixed(1) : 0;
                 const rankIcon = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}`;
                 const barWidth = percentage;
+                const storeCode = store.number || '-';
                 
                 html += `<tr style="border-bottom:1px solid var(--table-border);">
-                    <td style="padding:6px 10px;color:var(--accent);font-weight:600;">${rankIcon}</td>
-                    <td style="padding:6px 10px;color:var(--text-secondary);">${store.name}</td>
+                    <td style="padding:6px 10px;color:var(--accent);font-weight:600;text-align:center;">${rankIcon}</td>
+                    <td style="padding:6px 10px;color:var(--text-secondary);font-weight:500;">${store.name}</td>
+                    <td style="padding:6px 10px;color:var(--text-muted);font-family:monospace;font-size:11px;">${storeCode}</td>
                     <td style="padding:6px 10px;text-align:right;color:var(--text-secondary);">${store.sales.toFixed(0)}</td>
                     <td style="padding:6px 10px;text-align:right;color:var(--text-secondary);">${store.customers.toFixed(0)}</td>
                     <td style="padding:6px 10px;text-align:right;color:#FF6F00;font-weight:600;">${store.apc.toFixed(2)}</td>
@@ -8246,6 +8355,17 @@ function toggleChartType(chartId, type) {
             });
 
             html += `</tbody></table>`;
+            
+            // Add total row
+            html += `
+                <div style="display:flex;justify-content:space-between;padding:10px 12px;background:var(--bg-active);border-radius:6px;margin-top:8px;flex-wrap:wrap;gap:8px;font-size:12px;color:var(--text-secondary);">
+                    <span><strong>Total Stores:</strong> ${sortedData.length}</span>
+                    <span><strong>Total Sales:</strong> ${totalSales.toFixed(0)} SAR</span>
+                    <span><strong>Total Customers:</strong> ${processedData.totalCustomers.toFixed(0)}</span>
+                    <span><strong>Avg APC:</strong> ${processedData.avgAPC.toFixed(2)} SAR</span>
+                </div>
+            `;
+            
             container.innerHTML = html;
         }
 
@@ -8324,7 +8444,7 @@ function toggleChartType(chartId, type) {
                     <tr style="border-bottom:1px solid rgba(212,165,116,0.2);">
                         <th style="padding:6px 10px;text-align:left;color:var(--accent);font-weight:500;">#</th>
                         <th style="padding:6px 10px;text-align:left;color:var(--accent);font-weight:500;">Date</th>
-                        <th style="padding:6px 10px;text-align:left;color:var(--accent);font-weight:500;">Location</th>
+                        <th style="padding:6px 10px;text-align:left;color:var(--accent);font-weight:500;">Store Code</th>
                         <th style="padding:6px 10px;text-align:left;color:var(--accent);font-weight:500;">Store Name</th>
                         <th style="padding:6px 10px;text-align:right;color:var(--accent);font-weight:500;">Sales (SAR)</th>
                         <th style="padding:6px 10px;text-align:right;color:var(--accent);font-weight:500;">Customers</th>
@@ -8339,7 +8459,7 @@ function toggleChartType(chartId, type) {
                 html += `<tr style="border-bottom:1px solid var(--table-border);">
                     <td style="padding:6px 10px;color:var(--text-muted);">${index + 1}</td>
                     <td style="padding:6px 10px;color:var(--text-secondary);">${row.date}</td>
-                    <td style="padding:6px 10px;color:var(--text-muted);">${row.storeNum || '-'}</td>
+                    <td style="padding:6px 10px;color:var(--text-muted);font-family:monospace;font-size:11px;">${row.storeNum || '-'}</td>
                     <td style="padding:6px 10px;color:var(--text-secondary);">${row.storeName}</td>
                     <td style="padding:6px 10px;text-align:right;color:var(--text-secondary);">${row.sales.toFixed(0)}</td>
                     <td style="padding:6px 10px;text-align:right;color:var(--text-secondary);">${row.customers.toFixed(0)}</td>
@@ -8377,7 +8497,8 @@ function toggleChartType(chartId, type) {
         }
 
         showStoreDetail(store) {
-            alert(`🏪 Store: ${store.name}\n💰 Sales: ${store.sales.toFixed(0)} SAR\n👥 Customers: ${store.customers.toFixed(0)}\n📊 APC: ${store.apc.toFixed(2)} SAR`);
+            const num = store.number ? ` (#${store.number})` : '';
+            alert(`🏪 Store: ${store.name}${num}\n💰 Sales: ${store.sales.toFixed(0)} SAR\n👥 Customers: ${store.customers.toFixed(0)}\n📊 APC: ${store.apc.toFixed(2)} SAR`);
         }
 
         renderCompareView() {
@@ -8676,7 +8797,7 @@ function toggleChartType(chartId, type) {
                 return {
                     '#': index + 1,
                     'Date': date,
-                    'Location': storeNum || '-',
+                    'Store Code': storeNum || '-',
                     'Store Name': storeName,
                     'Sales (SAR)': sales.toFixed(0),
                     'Customers': customers.toFixed(0),
